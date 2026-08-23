@@ -106,6 +106,26 @@ export default function Dashboard() {
           )}
         </section>
 
+        {data.packs?.length > 0 && (
+          <section className="mt-14" data-testid="dashboard-packs-section">
+            <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">Strategy Packs</h2>
+            <div className="space-y-3">
+              {data.packs.map((p, i) => (
+                <div key={p.session_id} className="flex items-center justify-between border border-white/10 bg-[#0A0A0A] px-5 py-4" data-testid={`pack-row-${i}`}>
+                  <span className="text-sm text-[#F5F5F0]">{p.name}</span>
+                  <a
+                    href={`${API}/download/pack/${p.session_id}`}
+                    className="text-[10px] font-bold uppercase tracking-wider text-[#FF3333] hover:text-red-400 transition-colors duration-200"
+                    data-testid={`pack-download-button-${i}`}
+                  >
+                    Download Zip
+                  </a>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="mt-14" data-testid="dashboard-orders-section">
           <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">Order History</h2>
           {data.orders.length === 0 ? (

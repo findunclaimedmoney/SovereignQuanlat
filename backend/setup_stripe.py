@@ -32,6 +32,30 @@ CATALOG = [
             {"lookup_key": "ai_coach_monthly", "amount": 4900, "currency": "usd", "interval": "month"},
         ],
     },
+    {
+        "emergent_product_id": "pack_vol_harvester",
+        "name": "Sovereign Quant — Volatility Harvester Strategy Pack",
+        "tax_code": "txcd_10103001",
+        "prices": [
+            {"lookup_key": "pack_vol_harvester", "amount": 14900, "currency": "usd", "interval": None},
+        ],
+    },
+    {
+        "emergent_product_id": "pack_mean_reversion_pro",
+        "name": "Sovereign Quant — Mean Reversion Pro Strategy Pack",
+        "tax_code": "txcd_10103001",
+        "prices": [
+            {"lookup_key": "pack_mean_reversion_pro", "amount": 14900, "currency": "usd", "interval": None},
+        ],
+    },
+    {
+        "emergent_product_id": "pack_execution_suite",
+        "name": "Sovereign Quant — Execution Suite Strategy Pack",
+        "tax_code": "txcd_10103001",
+        "prices": [
+            {"lookup_key": "pack_execution_suite", "amount": 24900, "currency": "usd", "interval": None},
+        ],
+    },
 ]
 
 

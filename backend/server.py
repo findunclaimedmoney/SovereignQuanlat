@@ -41,7 +41,7 @@ api_router = APIRouter(prefix="/api")
 stripe.api_key = os.environ["SOVEREIGN_STRIPE_KEY"]
 LICENCE_SECRET = os.environ["LICENCE_HMAC_SECRET"]
 
-EMAIL_BASE_URL = "https://integrations.emergentagent.com"
+EMAIL_BASE_URL = os.environ["EMAIL_BASE_URL"]
 EMAIL_KEY = os.environ["EMERGENT_EMAIL_KEY"]
 EMAIL_FROM_NAME = os.environ["EMAIL_FROM_NAME"]
 EMAIL_REPLY_TO = os.environ.get("EMAIL_REPLY_TO")
@@ -65,6 +65,17 @@ PLANS = [
 ]
 PLAN_BY_LOOKUP = {p["lookup_key"]: p for p in PLANS if p["lookup_key"]}
 TIER_BY_LOOKUP = {k: p["name"] for k, p in PLAN_BY_LOOKUP.items()}
+
+COACH_LOOKUP = "ai_coach_monthly"
+
+PACKS = {
+    "pack_vol_harvester": {"name": "Volatility Harvester", "file": "pack_vol_harvester.zip", "price_usd": 149},
+    "pack_mean_reversion_pro": {"name": "Mean Reversion Pro", "file": "pack_mean_reversion_pro.zip", "price_usd": 149},
+    "pack_execution_suite": {"name": "Execution Suite", "file": "pack_execution_suite.zip", "price_usd": 249},
+}
+PACKS_DIR = ROOT_DIR / "packs"
+LICENCE_LOOKUPS = set(TIER_BY_LOOKUP.keys())
+ALL_SELLABLE = LICENCE_LOOKUPS | {COACH_LOOKUP} | set(PACKS.keys())
 
 
 def generate_licence_key(licensee: str, tier: str, duration_days: int = 365) -> str:
@@ -248,6 +259,34 @@ async def fulfil_order(session_id: str, payment_intent=None, subscription=None, 
                 )
             except Exception:
                 logger.exception(f"Coach welcome email failed for {session_id}")
+        return
+    if txn.get("lookup_key") in PACKS:
+        pack = PACKS[txn["lookup_key"]]
+        result = await db.payment_transactions.update_one(
+            {"session_id": session_id, "payment_status": {"$ne": "paid"}},
+            {"$set": {
+                "status": "completed", "payment_status": "paid", "tier": pack["name"],
+                "pack_file": pack["file"],
+                "stripe_payment_intent_id": payment_intent,
+                "stripe_subscription_id": subscription,
+                "stripe_customer_id": customer,
+                "fulfilled_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
+        if result.modified_count and customer_email:
+            origin = txn.get("origin_url", "")
+            try:
+                await send_email(
+                    to=customer_email,
+                    subject=f"Your Sovereign Quant {pack['name']} pack",
+                    html=pack_email_html(
+                        txn.get("licensee_name") or "Licensee", pack["name"],
+                        f"{origin}/api/download/pack/{session_id}",
+                    ),
+                )
+            except Exception:
+                logger.exception(f"Pack email failed for {session_id}")
         return
     tier = TIER_BY_LOOKUP.get(txn.get("lookup_key"), "Professional")
     licensee = txn.get("licensee_name") or "Licensee"
@@ -464,7 +503,11 @@ async def me_overview(user=Depends(get_current_user)):
         "licensee": o.get("licensee_name"),
         "licence_key": o.get("licence_key"),
         "revoked": bool(o.get("licence_revoked")),
-    } for o in paid]
+    } for o in paid if o.get("lookup_key") in LICENCE_LOOKUPS]
+    packs = [{
+        "name": PACKS[o["lookup_key"]]["name"],
+        "session_id": o["session_id"],
+    } for o in paid if o.get("lookup_key") in PACKS]
     referrals = await db.payment_transactions.find(
         {"referral_code": user.get("referral_code"), "payment_status": "paid"}, {"_id": 0}
     ).to_list(500)
@@ -501,6 +544,7 @@ async def me_overview(user=Depends(get_current_user)):
     return {
         "user": _public_user(user),
         "licences": licences,
+        "packs": packs,
         "orders": orders_out,
         "referral": {
             "code": user.get("referral_code"),
@@ -636,6 +680,51 @@ async def seed_coach_knowledge():
     )
 
 
+def pack_email_html(name: str, pack_name: str, download_url: str) -> str:
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#050505;padding:32px 0"><tr><td align="center">'
+        '<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+        'style="background:#0A0A0A;border:1px solid #26262b;font-family:Courier New,monospace">'
+        '<tr><td style="padding:24px 32px;border-bottom:1px solid #26262b">'
+        '<span style="color:#F5F5F0;font-size:16px;font-weight:bold;letter-spacing:2px">SOVEREIGN'
+        '<span style="color:#FF3333">//</span>QUANT</span></td></tr>'
+        '<tr><td style="padding:32px">'
+        f'<p style="color:#F5F5F0;font-size:15px;margin:0 0 8px">Pack secured, {escape(name)}.</p>'
+        f'<p style="color:#8C8C94;font-size:13px;line-height:1.7;margin:0 0 24px">Your '
+        f'<strong style="color:#F5F5F0">{escape(pack_name)}</strong> module is ready. '
+        'Unzip it and drop the .py file into your workstation folder — import it from the '
+        'Playground per the module docstring. The link below stays valid for this purchase.</p>'
+        f'<p style="margin:0"><a href="{escape(download_url)}" '
+        'style="color:#FF3333;font-size:13px">Download your module zip</a></p>'
+        '<p style="color:#55555C;font-size:11px;line-height:1.7;margin:24px 0 0">Sent by '
+        f'{escape(EMAIL_FROM_NAME)}. We never ask for passwords or card details by email.</p>'
+        '</td></tr></table></td></tr></table>'
+    )
+
+
+@api_router.get("/download/pack/{session_id}")
+async def download_pack(session_id: str):
+    record = await db.payment_transactions.find_one({"session_id": session_id})
+    if not record or record.get("payment_status") != "paid" or record.get("lookup_key") not in PACKS:
+        raise HTTPException(403, "A paid pack purchase is required")
+    pack = PACKS[record["lookup_key"]]
+    return FileResponse(PACKS_DIR / pack["file"], filename=pack["file"], media_type="application/zip")
+
+
+PACK_KNOWLEDGE = {
+    "title": "Strategy Packs (Armory)",
+    "text": "One-time drop-in strategy modules — buyer owns the code outright: Volatility Harvester $149 (ATR regime classifier, inverse-vol position sizing, harvestable/spike regime gating), Mean Reversion Pro $149 (Bollinger z-score entries, RSI(2) confirmation, OU half-life and 200-SMA regime filter), Execution Suite $249 (TWAP order slicing, participation-rate limiter, square-root slippage model). Sold in the Armory section, delivered instantly by download link and email.",
+}
+
+
+@app.on_event("startup")
+async def seed_pack_knowledge():
+    await db.concierge_knowledge.update_one(
+        {"title": PACK_KNOWLEDGE["title"]}, {"$set": PACK_KNOWLEDGE}, upsert=True
+    )
+
+
 class CheckoutRequest(BaseModel):
     lookup_key: str
     licensee_name: str = Field(min_length=2, max_length=120)
@@ -645,8 +734,8 @@ class CheckoutRequest(BaseModel):
 
 @api_router.post("/payments/checkout")
 async def create_checkout(req: CheckoutRequest, request: Request):
-    if req.lookup_key not in TIER_BY_LOOKUP and req.lookup_key != "ai_coach_monthly":
-        raise HTTPException(400, "Unknown licence tier")
+    if req.lookup_key not in ALL_SELLABLE:
+        raise HTTPException(400, "Unknown product")
     prices = await asyncio.to_thread(
         lambda: stripe.Price.list(lookup_keys=[req.lookup_key], active=True, limit=1).data
     )
@@ -714,6 +803,7 @@ async def get_order(session_id: str):
             "payment_status": record.get("payment_status"),
         }
     plan = PLAN_BY_LOOKUP.get(record.get("lookup_key"), {})
+    pack = PACKS.get(record.get("lookup_key"))
     return {
         "session_id": session_id,
         "status": "completed",
@@ -724,6 +814,7 @@ async def get_order(session_id: str):
         "duration_days": record.get("licence_duration_days", 365),
         "max_capital": plan.get("max_capital"),
         "strategies": plan.get("strategies"),
+        "pack_name": pack["name"] if pack else None,
         "amount": record.get("amount"),
         "currency": record.get("currency"),
     }
@@ -804,7 +895,7 @@ async def renewal_reminder_loop():
             window = {"$gte": now - timedelta(days=336), "$lte": now - timedelta(days=334)}
             cursor = db.payment_transactions.find({
                 "payment_status": "paid",
-                "lookup_key": {"$ne": "ai_coach_monthly"},
+                "lookup_key": {"$in": ["professional_annual", "institutional_annual"]},
                 "renewal_reminded": {"$ne": True},
                 "fulfilled_at": window,
             })

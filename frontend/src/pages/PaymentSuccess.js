@@ -97,14 +97,30 @@ export default function PaymentSuccess() {
         {state.phase === "paid" && order && (
           <div data-testid="payment-confirmed-state">
             <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight">
-              Licence <span className="text-[#00FF66]">issued.</span>
+              {order.licence_key ? (
+                <>Licence <span className="text-[#00FF66]">issued.</span></>
+              ) : order.pack_name ? (
+                <>Pack <span className="text-[#00FF66]">unlocked.</span></>
+              ) : (
+                <>Coach <span className="text-[#00FF66]">activated.</span></>
+              )}
             </h1>
             <p className="mt-6 text-zinc-400 text-sm leading-relaxed max-w-xl">
-              Paste this key into the workstation sidebar under{" "}
-              <span className="text-[#F5F5F0]">Activate New Licence Key</span>.
-              Activation is fully offline — guard this key like capital.
+              {order.licence_key ? (
+                <>
+                  Paste this key into the workstation sidebar under{" "}
+                  <span className="text-[#F5F5F0]">Activate New Licence Key</span>.
+                  Activation is fully offline — guard this key like capital.
+                </>
+              ) : order.pack_name ? (
+                "Your strategy module is ready. Download it below and drop the .py file into your workstation folder."
+              ) : (
+                "ATLAS is live. Open your dashboard, scroll to the AI Coach panel, and start your first session."
+              )}
             </p>
 
+            {order.licence_key && (
+            <>
             <div className="mt-10 border border-white/10 bg-[#0A0A0A]">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-3 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
                 <span>HMAC-SHA256 // Offline Key</span>
@@ -160,6 +176,46 @@ export default function PaymentSuccess() {
               >
                 {upgrading ? "Upgrading…" : "Upgrade to Institutional — Prorated"}
               </button>
+            )}
+            </>
+            )}
+
+            {order.pack_name && (
+              <div className="mt-10 border border-white/10 bg-[#0A0A0A]">
+                <div className="flex items-center justify-between border-b border-white/10 px-5 py-3 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+                  <span>Strategy Pack // {order.pack_name}</span>
+                  <span className="text-[#00FF66]">Ready</span>
+                </div>
+                <div className="p-5">
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Drop-in module for the Sovereign Quant workstation. One-time
+                    purchase — the code is yours.
+                  </p>
+                  <a
+                    href={`${API}/download/pack/${sessionId}`}
+                    className="mt-5 inline-flex items-center gap-2 bg-[#FF3333] text-white text-xs font-bold uppercase tracking-wider px-6 py-3 hover:bg-red-700 active:scale-95 transition-[background-color,transform] duration-200"
+                    data-testid="download-pack-button"
+                  >
+                    Download {order.pack_name}
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {!order.licence_key && !order.pack_name && (
+              <div className="mt-10 border border-white/10 bg-[#0A0A0A] p-6" data-testid="coach-active-card">
+                <p className="text-sm text-zinc-300 leading-relaxed">
+                  <span className="text-[#00FF66]">ACTIVE.</span> Sign in with this
+                  purchase email and your AI Coach panel unlocks automatically.
+                </p>
+                <Link
+                  to="/dashboard"
+                  className="mt-5 inline-block bg-white text-black text-xs font-bold uppercase tracking-wider px-8 py-4 hover:bg-zinc-200 active:scale-95 transition-[background-color,transform] duration-200"
+                  data-testid="coach-dashboard-link"
+                >
+                  Open Dashboard
+                </Link>
+              </div>
             )}
           </div>
         )}
