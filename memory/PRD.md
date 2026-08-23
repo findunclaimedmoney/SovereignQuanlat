@@ -33,11 +33,16 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 - Licence email on fulfilment (template + pipeline verified; fake test recipient rejected by proxy as designed).
 - AI integration added per user request: Claude (claude-sonnet-4-6) via Emergent universal key.
 
+## Implemented (2026-08-23, round 2)
+- Stripe Tax: automatic_tax enabled at checkout (account head office Cloverdale WA, AU already configured); billing address required at checkout.
+- Software download: /api/download/{session_id} serves sovereign-quant-workstation.zip (app.py, README, requirements, run scripts) to paid orders only (403 otherwise); download button on fulfilment page.
+- Renewal reminders: daily background scanner emails licensees 30 days before their 365-day key expires (fulfilled_at window, renewal_reminded flag, branded template passes guardrail gate).
+- Branding: API rename blocked (own-account limitation); logo generated at /app/sq_logo.png — user must upload in Stripe Dashboard (Settings → Branding) and rename business there.
+
 ## Backlog
 - P0: Rotate LICENCE_HMAC_SECRET to user's own secret before real sales; user to claim Stripe sandbox (onboarding link shared) or provide own key (BYOK switch).
-- P1: Secure software download (zip of app.py bundle) unlocked after purchase.
-- P1: Licence renewal reminder emails (365-day duration).
-- P2: Customer portal to re-view licence keys by email; refund handling UI; Community download counter/analytics.
+- P1: Customer portal to re-view licence keys by email; refund handling UI.
+- P2: Community download counter/analytics; upgrade path Community→Professional inside app.
 
 ## Next Tasks
 1. User decides sandbox-claim vs own Stripe key. 2. Post-purchase download delivery. 3. Renewal reminders. 4. Deploy + Stripe KYC.

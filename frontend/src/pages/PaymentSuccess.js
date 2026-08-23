@@ -98,14 +98,23 @@ export default function PaymentSuccess() {
                 >
                   {order.licence_key}
                 </code>
-                <button
-                  onClick={copyKey}
-                  className="mt-5 flex items-center gap-2 bg-white text-black text-xs font-bold uppercase tracking-wider px-6 py-3 hover:bg-zinc-200 active:scale-95 transition-[background-color,transform] duration-200"
-                  data-testid="copy-licence-key-button"
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copied ? "Copied" : "Copy Key"}
-                </button>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    onClick={copyKey}
+                    className="flex items-center gap-2 bg-white text-black text-xs font-bold uppercase tracking-wider px-6 py-3 hover:bg-zinc-200 active:scale-95 transition-[background-color,transform] duration-200"
+                    data-testid="copy-licence-key-button"
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? "Copied" : "Copy Key"}
+                  </button>
+                  <a
+                    href={`${API}/download/${sessionId}`}
+                    className="flex items-center gap-2 bg-[#FF3333] text-white text-xs font-bold uppercase tracking-wider px-6 py-3 hover:bg-red-700 active:scale-95 transition-[background-color,transform] duration-200"
+                    data-testid="download-workstation-button"
+                  >
+                    Download Workstation
+                  </a>
+                </div>
               </div>
             </div>
 

@@ -7,7 +7,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from html import escape
 from html.parser import HTMLParser
 from pathlib import Path
@@ -18,7 +18,7 @@ import stripe
 from emergentintegrations.payments.stripe.checkout import StripeCheckout
 from dotenv import load_dotenv
 from fastapi import FastAPI, APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 from starlette.middleware.cors import CORSMiddleware
@@ -207,6 +207,7 @@ async def fulfil_order(session_id: str, payment_intent=None, subscription=None, 
             "stripe_payment_intent_id": payment_intent,
             "stripe_subscription_id": subscription,
             "stripe_customer_id": customer,
+            "fulfilled_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }},
     )
@@ -259,6 +260,8 @@ async def create_checkout(req: CheckoutRequest, request: Request):
         lambda: stripe.checkout.Session.create(
             line_items=[{"price": price.id, "quantity": 1}],
             mode="subscription" if price.recurring else "payment",
+            automatic_tax={"enabled": True},
+            billing_address_collection="required",
             success_url=f"{req.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{req.origin_url}/payment/cancel",
             metadata={"lookup_key": req.lookup_key, "licensee_name": req.licensee_name},
@@ -360,6 +363,83 @@ async def stripe_webhook(request: Request):
     return {"status": "ok"}
 
 
+BUNDLE_ZIP = ROOT_DIR / "sovereign-quant-workstation.zip"
+
+
+@api_router.get("/download/{session_id}")
+async def download_workstation(session_id: str):
+    record = await db.payment_transactions.find_one({"session_id": session_id})
+    if not record or record.get("payment_status") != "paid":
+        raise HTTPException(403, "A paid licence is required to download the workstation")
+    return FileResponse(BUNDLE_ZIP, filename="sovereign-quant-workstation.zip", media_type="application/zip")
+
+
+def renewal_email_html(licensee: str, tier: str, origin: str) -> str:
+    renew_url = f"{origin}/#pricing"
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#050505;padding:32px 0"><tr><td align="center">'
+        '<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+        'style="background:#0A0A0A;border:1px solid #26262b;font-family:Courier New,monospace">'
+        '<tr><td style="padding:24px 32px;border-bottom:1px solid #26262b">'
+        '<span style="color:#F5F5F0;font-size:16px;font-weight:bold;letter-spacing:2px">SOVEREIGN'
+        '<span style="color:#FF3333">//</span>QUANT</span></td></tr>'
+        '<tr><td style="padding:32px">'
+        f'<p style="color:#F5F5F0;font-size:15px;margin:0 0 8px">30 days left, {escape(licensee)}.</p>'
+        f'<p style="color:#8C8C94;font-size:13px;line-height:1.7;margin:0 0 24px">Your '
+        f'<strong style="color:#F5F5F0">{escape(tier)}</strong> licence expires in 30 days. '
+        'Renew now and a fresh 365-day HMAC key is issued instantly — activation takes '
+        'seconds in the workstation sidebar.</p>'
+        f'<p style="margin:0 0 8px"><a href="{escape(renew_url)}" '
+        'style="color:#FF3333;font-size:13px">Renew your licence</a></p>'
+        '<p style="color:#55555C;font-size:11px;line-height:1.7;margin:24px 0 0">Sent by '
+        f'{escape(EMAIL_FROM_NAME)}. We never ask for passwords or card details by email.</p>'
+        '</td></tr></table></td></tr></table>'
+    )
+
+
+async def renewal_reminder_loop():
+    await asyncio.sleep(60)
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            window = {"$gte": now - timedelta(days=336), "$lte": now - timedelta(days=334)}
+            cursor = db.payment_transactions.find({
+                "payment_status": "paid",
+                "renewal_reminded": {"$ne": True},
+                "fulfilled_at": window,
+            })
+            async for txn in cursor:
+                email = txn.get("licence_email_to")
+                if not email:
+                    continue
+                try:
+                    await send_email(
+                        to=email,
+                        subject=f"Your Sovereign Quant {txn.get('tier')} licence expires in 30 days",
+                        html=renewal_email_html(
+                            txn.get("licensee_name") or "Licensee",
+                            txn.get("tier") or "Professional",
+                            txn.get("origin_url", ""),
+                        ),
+                    )
+                    await db.payment_transactions.update_one(
+                        {"session_id": txn["session_id"]},
+                        {"$set": {"renewal_reminded": True}},
+                    )
+                    logger.info(f"Renewal reminder sent for {txn['session_id']}")
+                except Exception:
+                    logger.exception(f"Renewal reminder failed for {txn['session_id']}")
+        except Exception:
+            logger.exception("Renewal reminder scan failed")
+        await asyncio.sleep(24 * 3600)
+
+
+@app.on_event("startup")
+async def start_renewal_reminders():
+    asyncio.create_task(renewal_reminder_loop())
+
+
 CONCIERGE_SYSTEM = """You are AXIOM, the official concierge of Sovereign Quant — an offline-first, multi-agent quantitative trading workstation sold on this site. Reply in plain text only: no markdown, no emojis, no bullet symbols. Keep answers under 80 words unless the buyer asks for detail.
 
 Facts you know:
@@ -368,7 +448,7 @@ Facts you know:
 - Licences are HMAC-SHA256 cryptographic keys, activated locally inside the app sidebar under Activate New Licence Key. No internet needed to activate. Duration 365 days.
 - Features: natural-language multi-agent orchestrator (Data, Strategy, Risk, Reporting and Licence agents with correlation-traced logs), strategy playground (pairs statistical arbitrage with Engle-Granger cointegration, volatility-sized momentum with ADX filter, regime-gated mean reversion), non-bypassable risk gates with a kill switch (daily loss, drawdown, leverage, portfolio heat limits), branded executive tearsheets.
 - Runs on Windows, Mac and Linux via run.bat or run.sh, then opens at localhost:8501. Python-based, dependencies: streamlit, pandas, numpy, matplotlib.
-- Checkout is handled by Stripe; the licence key is issued instantly on the confirmation page after payment.
+- Checkout is handled by Stripe; the licence key is issued instantly on the confirmation page after payment, and the full workstation files (app.py, run scripts, README) can be downloaded from that same page.
 - Never give financial advice, never promise returns, never discuss competitors. If asked something unrelated to the product, redirect to Sovereign Quant."""
 
 
