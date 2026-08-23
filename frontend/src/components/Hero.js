@@ -2,6 +2,8 @@ import { useMemo, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Canvas, useFrame } from "@react-three/fiber";
 
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
 const EASE = [0.76, 0, 0.24, 1];
 
 const MaskedLine = ({ children, delay }) => (
@@ -114,8 +116,9 @@ export const Hero = () => {
           className="mt-10 max-w-xl text-base md:text-lg leading-relaxed text-zinc-400"
           data-testid="hero-subcopy"
         >
-          Zero cloud telemetry. Non-bypassable risk gates. A cryptographically
-          licensed trading engine that answers to no server but your own.
+          A strategy research and risk-control workstation that runs on your
+          machine. Plainly: it never holds your money, never places trades for
+          you, and needs no broker account, no API keys, no cloud.
         </motion.p>
 
         <motion.div
@@ -124,13 +127,20 @@ export const Hero = () => {
           transition={{ duration: 1, delay: 1.5, ease: EASE }}
           className="mt-12 flex flex-wrap items-center gap-4"
         >
+          <a
+            href={`${API}/download/community`}
+            className="bg-white text-black font-bold uppercase tracking-wider px-8 py-4 hover:bg-zinc-200 active:scale-95 transition-[background-color,transform] duration-200"
+            data-testid="hero-download-button"
+          >
+            Download Free — No Card
+          </a>
           <button
             onClick={() =>
               window.__lenis
                 ? window.__lenis.scrollTo("#pricing", { offset: -72 })
                 : document.querySelector("#pricing")?.scrollIntoView({ behavior: "smooth" })
             }
-            className="bg-white text-black font-bold uppercase tracking-wider px-8 py-4 hover:bg-zinc-200 active:scale-95 transition-[background-color,transform] duration-200"
+            className="border border-[#FF3333]/60 text-[#FF3333] font-bold uppercase tracking-wider px-8 py-4 hover:bg-[#FF3333]/10 active:scale-95 transition-[background-color,transform] duration-200"
             data-testid="hero-acquire-button"
           >
             Acquire Licence
@@ -141,10 +151,10 @@ export const Hero = () => {
                 ? window.__lenis.scrollTo("#manifesto", { offset: -72 })
                 : document.querySelector("#manifesto")?.scrollIntoView({ behavior: "smooth" })
             }
-            className="border border-white/20 text-white font-bold uppercase tracking-wider px-8 py-4 hover:bg-white/5 active:scale-95 transition-[background-color,transform] duration-200"
+            className="text-zinc-500 font-bold uppercase tracking-wider px-6 py-4 hover:text-white active:scale-95 transition-[color,transform] duration-200"
             data-testid="hero-manifesto-button"
           >
-            Read the Manifesto
+            Read the Manifesto →
           </button>
         </motion.div>
       </motion.div>

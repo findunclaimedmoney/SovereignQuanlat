@@ -680,6 +680,16 @@ async def seed_coach_knowledge():
     )
 
 
+@api_router.get("/download/community")
+async def download_community():
+    return FileResponse(BUNDLE_ZIP, filename="sovereign-quant-workstation.zip", media_type="application/zip")
+
+
+@api_router.get("/sample-tearsheet")
+async def sample_tearsheet():
+    return FileResponse(ROOT_DIR / "sample_tearsheet.pdf", filename="sovereign-quant-sample-tearsheet.pdf", media_type="application/pdf")
+
+
 def pack_email_html(name: str, pack_name: str, download_url: str) -> str:
     return (
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
@@ -720,7 +730,7 @@ PACK_KNOWLEDGE = {
 
 PLAIN_ENGLISH_KNOWLEDGE = {
     "title": "Plain-English Positioning",
-    "text": "When a visitor seems non-technical, explain simply: Sovereign Quant is a strategy-testing workstation with built-in safety limits that runs on their own computer. It never holds money, never places trades by itself, and promises no returns. Max Capital means the largest account size the safety engine will manage. Free Community tier to try, narrated guide to learn, AI Coach for plain-English teaching.",
+    "text": "When a visitor seems non-technical, explain simply: Sovereign Quant is a strategy-testing workstation with built-in safety limits that runs on their own computer. It never holds money, never places trades by itself, and promises no returns. Max Capital means the largest account size the safety engine will manage. The full workstation is free to download (Community tier, no card required) from the hero button. A sample tearsheet PDF is on the site under Receipts. Refund policy: if the workstation fails to install or activate on the buyer's machine, the desk refunds them. Requirements: Python 3.10+, no broker, no API keys, no internet after install.",
 }
 
 
