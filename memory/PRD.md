@@ -54,6 +54,10 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 - Welcome email on registration (guardrail-gated template).
 - DECLINED: 3% per-trading-transaction fee — conflicts with user's own pinned memory core (no unregulated multi-tenant transaction-fee platform) and is regulated broker/exchange territory; offline software cannot meter trades server-side. Compliant monetization alternatives offered.
 
+## Implemented (2026-08-23, round 5)
+- AI Coach add-on (ATLAS): $49/month Stripe subscription (lookup ai_coach_monthly, live product created), Claude-Opus coach chat gated inside dashboard (coach_messages per user, knowledge base + memory core injected, education-only positioning), coach welcome email on fulfilment, coach branch in fulfil_order (no licence key minted), excluded from 365-day renewal reminders. Pricing page add-on card; PaymentSuccess handles non-licence orders.
+- Confirmed user's re-uploaded workstation files (app.py etc.) are byte-identical to the originals already bundled in the paid download zip.
+
 ## Backlog
 - P0: Rotate LICENCE_HMAC_SECRET to user's own secret before real sales; user to claim Stripe sandbox (onboarding link shared) or provide own key (BYOK switch).
 - P1: Customer portal to re-view licence keys by email; refund handling UI.

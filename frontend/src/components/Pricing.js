@@ -199,6 +199,42 @@ export const Pricing = () => {
         ))}
       </div>
 
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.9, ease: EASE }}
+        className="mt-6 border border-white/10 bg-[#111111] p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-8 hover:border-[#FF3333]/40 transition-colors duration-300"
+        data-testid="pricing-card-coach"
+      >
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold">Add-On</p>
+          <h3 className="font-display text-2xl md:text-3xl font-light uppercase mt-3">
+            AI Coach <span className="text-outline">— Atlas</span>
+          </h3>
+          <p className="mt-3 text-sm text-zinc-400 max-w-lg leading-relaxed">
+            A Claude-Opus mentor inside your dashboard. Strategy mechanics, risk
+            discipline, workstation mastery — on tap, 24/7. Software education,
+            never investment advice. Cancel anytime.
+          </p>
+        </div>
+        <div className="text-left md:text-right shrink-0">
+          <p className="font-display text-3xl md:text-4xl font-black tabular" data-testid="pricing-price-coach">
+            $49<span className="text-sm text-zinc-500 font-light">/mo</span>
+          </p>
+          <button
+            onClick={() => {
+              setSelected({ id: "ai_coach", name: "AI Coach", price: 49, lookupKey: "ai_coach_monthly", interval: "month" });
+              setLicensee("");
+            }}
+            className="mt-4 border border-[#FF3333]/60 text-[#FF3333] font-bold uppercase tracking-wider px-8 py-4 hover:bg-[#FF3333]/10 active:scale-95 transition-[background-color,transform] duration-200"
+            data-testid="buy-coach-button"
+          >
+            Add AI Coach
+          </button>
+        </div>
+      </motion.div>
+
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent
           className="bg-[#0A0A0A] border border-white/10 rounded-none text-[#F5F5F0] sm:max-w-md"
@@ -235,7 +271,7 @@ export const Pricing = () => {
               className="w-full bg-[#FF3333] text-white font-bold uppercase tracking-wider px-8 py-4 hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
               data-testid="checkout-submit-button"
             >
-              {loading ? "Routing to Secure Checkout…" : `Proceed — $${selected?.price.toLocaleString()}/yr`}
+              {loading ? "Routing to Secure Checkout…" : `Proceed — $${selected?.price.toLocaleString()}/${selected?.interval === "month" ? "mo" : "yr"}`}
             </button>
             <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 text-center">
               Secured by Stripe // Licence issued instantly after payment

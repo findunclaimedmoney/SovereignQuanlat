@@ -24,6 +24,14 @@ CATALOG = [
             {"lookup_key": "institutional_annual", "amount": 199900, "currency": "usd", "interval": "year"},
         ],
     },
+    {
+        "emergent_product_id": "ai_coach_subscription",
+        "name": "Sovereign Quant — AI Coach (Monthly)",
+        "tax_code": "txcd_10103001",
+        "prices": [
+            {"lookup_key": "ai_coach_monthly", "amount": 4900, "currency": "usd", "interval": "month"},
+        ],
+    },
 ]
 
 

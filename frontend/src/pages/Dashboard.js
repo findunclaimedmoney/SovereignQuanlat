@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { CoachChat } from "@/components/CoachChat";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -186,6 +187,13 @@ export default function Dashboard() {
               </p>
             )}
           </div>
+        </section>
+
+        <section className="mt-14" data-testid="dashboard-coach-section">
+          <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">
+            AI Coach — Atlas
+          </h2>
+          <CoachChat />
         </section>
 
         <div className="mt-14 flex gap-4 flex-wrap">

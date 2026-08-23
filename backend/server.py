@@ -197,9 +197,57 @@ def licence_email_html(licensee: str, tier: str, licence_key: str, success_url: 
     )
 
 
+def coach_welcome_email_html(name: str, origin: str) -> str:
+    dashboard = f"{origin}/dashboard"
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#050505;padding:32px 0"><tr><td align="center">'
+        '<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+        'style="background:#0A0A0A;border:1px solid #26262b;font-family:Courier New,monospace">'
+        '<tr><td style="padding:24px 32px;border-bottom:1px solid #26262b">'
+        '<span style="color:#F5F5F0;font-size:16px;font-weight:bold;letter-spacing:2px">SOVEREIGN'
+        '<span style="color:#FF3333">//</span>QUANT</span></td></tr>'
+        '<tr><td style="padding:32px">'
+        f'<p style="color:#F5F5F0;font-size:15px;margin:0 0 8px">ATLAS is live, {escape(name)}.</p>'
+        '<p style="color:#8C8C94;font-size:13px;line-height:1.7;margin:0 0 24px">Your AI Coach '
+        'subscription is active. Open your Licensee Dashboard and scroll to the coach panel — '
+        'strategy mechanics, risk discipline and workstation mastery, on tap. Software education, '
+        'never investment advice.</p>'
+        f'<p style="margin:0"><a href="{escape(dashboard)}" '
+        'style="color:#FF3333;font-size:13px">Open your dashboard</a></p>'
+        '<p style="color:#55555C;font-size:11px;line-height:1.7;margin:24px 0 0">Sent by '
+        f'{escape(EMAIL_FROM_NAME)}. We never ask for passwords or card details by email.</p>'
+        '</td></tr></table></td></tr></table>'
+    )
+
+
 async def fulfil_order(session_id: str, payment_intent=None, subscription=None, customer_email=None, customer=None):
     txn = await db.payment_transactions.find_one({"session_id": session_id})
     if not txn or txn.get("payment_status") == "paid":
+        return
+    if txn.get("lookup_key") == "ai_coach_monthly":
+        result = await db.payment_transactions.update_one(
+            {"session_id": session_id, "payment_status": {"$ne": "paid"}},
+            {"$set": {
+                "status": "completed", "payment_status": "paid", "tier": "AI Coach",
+                "stripe_payment_intent_id": payment_intent,
+                "stripe_subscription_id": subscription,
+                "stripe_customer_id": customer,
+                "fulfilled_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
+        if result.modified_count and customer_email:
+            try:
+                await send_email(
+                    to=customer_email,
+                    subject="Your Sovereign Quant AI Coach is active",
+                    html=coach_welcome_email_html(
+                        txn.get("licensee_name") or "Licensee", txn.get("origin_url", "")
+                    ),
+                )
+            except Exception:
+                logger.exception(f"Coach welcome email failed for {session_id}")
         return
     tier = TIER_BY_LOOKUP.get(txn.get("lookup_key"), "Professional")
     licensee = txn.get("licensee_name") or "Licensee"
@@ -493,6 +541,101 @@ async def guide_narration(step_id: str):
     return FileResponse(path, media_type="audio/mpeg")
 
 
+# ---------------------------------------------------------------------------
+# AI Coach (ATLAS) — paid monthly add-on, Claude Opus, education-positioned
+# ---------------------------------------------------------------------------
+COACH_SYSTEM = """You are ATLAS, the Sovereign Quant AI Coach — an expert mentor included with the AI Coach subscription. You teach: workstation operation (Orchestrator, Strategy Playground, risk gates, tearsheets, licence activation), strategy mechanics (pairs statistical arbitrage with Engle-Granger cointegration, volatility-sized momentum with ADX gating, regime-filtered mean reversion), risk management discipline (daily loss limits, drawdown kill switch, leverage, portfolio heat), and installation/troubleshooting.
+
+STRICT POSITIONING: this is software education, never investment advice. Never recommend specific trades, assets, or brokers. Never promise or imply returns. When a lesson touches live trading, remind the operator that capital decisions are theirs alone. Plain text only, no markdown, structured and thorough — up to 200 words when a procedure needs it. Redirect anything unrelated to Sovereign Quant."""
+
+
+class CoachChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+async def _coach_active(email: str) -> bool:
+    doc = await db.payment_transactions.find_one({
+        "licence_email_to": email,
+        "lookup_key": "ai_coach_monthly",
+        "payment_status": "paid",
+    })
+    return bool(doc)
+
+
+@api_router.get("/coach/status")
+async def coach_status(user=Depends(get_current_user)):
+    return {"active": await _coach_active(user["email"])}
+
+
+@api_router.post("/coach/chat")
+async def coach_chat(req: CoachChatRequest, user=Depends(get_current_user)):
+    from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
+
+    if not await _coach_active(user["email"]):
+        raise HTTPException(403, "AI Coach subscription required")
+
+    history = await db.coach_messages.find(
+        {"user_id": user["user_id"]}, {"_id": 0}
+    ).sort("created_at", 1).to_list(40)
+    transcript = "\n".join(
+        ("Operator: " if m["role"] == "user" else "Coach: ") + m["content"]
+        for m in history[-20:]
+    )
+    core = await build_memory_context()
+    knowledge = await db.concierge_knowledge.find({}, {"_id": 0}).to_list(50)
+    knowledge_block = "\n\n".join(f"[{k['title']}]\n{k['text']}" for k in knowledge)
+    system = core + "\n\nKNOWLEDGE BASE:\n" + knowledge_block + "\n\n" + COACH_SYSTEM
+    prompt = f"Conversation so far:\n{transcript}\n\nOperator: {req.message}" if transcript else req.message
+    await db.coach_messages.insert_one({
+        "user_id": user["user_id"], "role": "user", "content": req.message,
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    async def event_generator():
+        chat = LlmChat(
+            api_key=os.environ["EMERGENT_LLM_KEY"],
+            session_id=f"coach-{user['user_id']}",
+            system_message=system,
+        ).with_model("anthropic", "claude-opus-4-7")
+        full = []
+        try:
+            async for ev in chat.stream_message(UserMessage(text=prompt)):
+                if isinstance(ev, TextDelta):
+                    full.append(ev.content)
+                    yield f"data: {json.dumps({'delta': ev.content})}\n\n"
+                elif isinstance(ev, StreamDone):
+                    break
+        except Exception:
+            logger.exception("Coach stream failed")
+            if not full:
+                yield f"data: {json.dumps({'delta': 'CONNECTION FAULT — please retransmit.'})}\n\n"
+        if full:
+            await db.coach_messages.insert_one({
+                "user_id": user["user_id"], "role": "assistant",
+                "content": "".join(full), "created_at": datetime.now(timezone.utc),
+            })
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+COACH_KNOWLEDGE = {
+    "title": "AI Coach Add-on",
+    "text": "AI Coach (ATLAS) is a $49/month subscription add-on: a Claude-Opus mentor inside the customer dashboard teaching workstation operation, strategy mechanics and risk discipline. Software education only, not investment advice. Cancel anytime; access follows the paid subscription status.",
+}
+
+
+@app.on_event("startup")
+async def seed_coach_knowledge():
+    await db.concierge_knowledge.update_one(
+        {"title": COACH_KNOWLEDGE["title"]}, {"$set": COACH_KNOWLEDGE}, upsert=True
+    )
+
+
 class CheckoutRequest(BaseModel):
     lookup_key: str
     licensee_name: str = Field(min_length=2, max_length=120)
@@ -502,7 +645,7 @@ class CheckoutRequest(BaseModel):
 
 @api_router.post("/payments/checkout")
 async def create_checkout(req: CheckoutRequest, request: Request):
-    if req.lookup_key not in TIER_BY_LOOKUP:
+    if req.lookup_key not in TIER_BY_LOOKUP and req.lookup_key != "ai_coach_monthly":
         raise HTTPException(400, "Unknown licence tier")
     prices = await asyncio.to_thread(
         lambda: stripe.Price.list(lookup_keys=[req.lookup_key], active=True, limit=1).data
@@ -661,6 +804,7 @@ async def renewal_reminder_loop():
             window = {"$gte": now - timedelta(days=336), "$lte": now - timedelta(days=334)}
             cursor = db.payment_transactions.find({
                 "payment_status": "paid",
+                "lookup_key": {"$ne": "ai_coach_monthly"},
                 "renewal_reminded": {"$ne": True},
                 "fulfilled_at": window,
             })
