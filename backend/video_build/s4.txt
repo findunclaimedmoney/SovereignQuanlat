@@ -1,0 +1,3 @@
+file '/app/backend/video_build/frames/s4_000.png'
+duration 8.000
+file '/app/backend/video_build/frames/s4_000.png'

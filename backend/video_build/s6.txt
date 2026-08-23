@@ -1,0 +1,17 @@
+file '/app/backend/video_build/frames/s6_000.png'
+duration 3.750
+file '/app/backend/video_build/frames/s6_001.png'
+duration 3.750
+file '/app/backend/video_build/frames/s6_002.png'
+duration 3.750
+file '/app/backend/video_build/frames/s6_003.png'
+duration 3.750
+file '/app/backend/video_build/frames/s6_004.png'
+duration 3.750
+file '/app/backend/video_build/frames/s6_005.png'
+duration 3.750
+file '/app/backend/video_build/frames/s6_006.png'
+duration 3.750
+file '/app/backend/video_build/frames/s6_007.png'
+duration 3.750
+file '/app/backend/video_build/frames/s6_007.png'

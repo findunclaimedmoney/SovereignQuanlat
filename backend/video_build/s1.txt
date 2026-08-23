@@ -1,0 +1,9 @@
+file '/app/backend/video_build/frames/s1_000.png'
+duration 2.500
+file '/app/backend/video_build/frames/s1_001.png'
+duration 2.500
+file '/app/backend/video_build/frames/s1_002.png'
+duration 2.500
+file '/app/backend/video_build/frames/s1_003.png'
+duration 2.500
+file '/app/backend/video_build/frames/s1_003.png'
