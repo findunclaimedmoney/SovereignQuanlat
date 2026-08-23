@@ -4,8 +4,8 @@ from pathlib import Path
 import stripe
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / ".env")
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY") or "sk_test_emergent"
+load_dotenv(Path(__file__).parent / ".env", override=True)
+stripe.api_key = os.environ["STRIPE_API_KEY"]
 
 CATALOG = [
     {
@@ -67,8 +67,7 @@ def ensure_price(product, p):
 
 if __name__ == "__main__":
     account = stripe.Account.retrieve()
-    print("account country:", account["country"])
-    ensure_tax_settings()
+    print("account:", account["id"], "country:", account["country"], "charges_enabled:", account["charges_enabled"])
     for entry in CATALOG:
         product = get_or_create_product(entry)
         for price in entry["prices"]:

@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 import httpx
 import stripe
+from emergentintegrations.payments.stripe.checkout import StripeCheckout
 from dotenv import load_dotenv
 from fastapi import FastAPI, APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -23,7 +24,7 @@ from pydantic import BaseModel, Field
 from starlette.middleware.cors import CORSMiddleware
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / ".env")
+load_dotenv(ROOT_DIR / ".env", override=True)
 
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -32,8 +33,7 @@ db = client[os.environ["DB_NAME"]]
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY") or "sk_test_emergent"
-STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+stripe.api_key = os.environ["STRIPE_API_KEY"]
 LICENCE_SECRET = os.environ["LICENCE_HMAC_SECRET"]
 
 EMAIL_BASE_URL = "https://integrations.emergentagent.com"
@@ -43,13 +43,6 @@ EMAIL_REPLY_TO = os.environ.get("EMAIL_REPLY_TO")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-SMP_COUNTRIES = {
-    "AU", "AT", "BE", "BG", "CA", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
-    "DE", "GI", "GR", "HK", "HU", "IE", "IT", "JP", "LV", "LI", "LT", "LU",
-    "MT", "NL", "NO", "PL", "PT", "RO", "SG", "SK", "SI", "ES", "SE", "CH",
-    "GB", "US",
-}
 
 PLANS = [
     {
@@ -67,20 +60,6 @@ PLANS = [
 ]
 PLAN_BY_LOOKUP = {p["lookup_key"]: p for p in PLANS if p["lookup_key"]}
 TIER_BY_LOOKUP = {k: p["name"] for k, p in PLAN_BY_LOOKUP.items()}
-
-_tax_mode = None
-
-
-def get_tax_mode():
-    global _tax_mode
-    if _tax_mode is None:
-        try:
-            country = stripe.Account.retrieve()["country"]
-            _tax_mode = "full" if country in SMP_COUNTRIES else "calc_only"
-        except stripe.error.StripeError:
-            _tax_mode = "calc_only"
-        logger.info(f"Stripe tax mode resolved: {_tax_mode}")
-    return _tax_mode
 
 
 def generate_licence_key(licensee: str, tier: str, duration_days: int = 365) -> str:
@@ -267,7 +246,7 @@ class CheckoutRequest(BaseModel):
 
 
 @api_router.post("/payments/checkout")
-async def create_checkout(req: CheckoutRequest):
+async def create_checkout(req: CheckoutRequest, request: Request):
     if req.lookup_key not in TIER_BY_LOOKUP:
         raise HTTPException(400, "Unknown licence tier")
     prices = await asyncio.to_thread(
@@ -276,40 +255,15 @@ async def create_checkout(req: CheckoutRequest):
     if not prices:
         raise HTTPException(500, f"Price not found: {req.lookup_key}")
     price = prices[0]
-    kwargs = dict(
-        line_items=[{"price": price.id, "quantity": 1}],
-        mode="subscription" if price.recurring else "payment",
-        success_url=f"{req.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{req.origin_url}/payment/cancel",
-        metadata={"lookup_key": req.lookup_key, "licensee_name": req.licensee_name},
-    )
-    tax_mode = await asyncio.to_thread(get_tax_mode)
-    if tax_mode == "full":
-        try:
-            session = await asyncio.to_thread(
-                lambda: stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
-            )
-        except stripe.error.InvalidRequestError as e:
-            msg = (e.user_message or "").lower()
-            if "managed payments" in msg or "ineligible" in msg:
-                session = await asyncio.to_thread(
-                    lambda: stripe.checkout.Session.create(
-                        **kwargs, automatic_tax={"enabled": True},
-                        billing_address_collection="required",
-                    )
-                )
-            else:
-                raise
-    elif tax_mode == "calc_only":
-        session = await asyncio.to_thread(
-            lambda: stripe.checkout.Session.create(
-                **kwargs, automatic_tax={"enabled": True},
-                billing_address_collection="required",
-            )
+    session = await asyncio.to_thread(
+        lambda: stripe.checkout.Session.create(
+            line_items=[{"price": price.id, "quantity": 1}],
+            mode="subscription" if price.recurring else "payment",
+            success_url=f"{req.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{req.origin_url}/payment/cancel",
+            metadata={"lookup_key": req.lookup_key, "licensee_name": req.licensee_name},
         )
-    else:
-        session = await asyncio.to_thread(lambda: stripe.checkout.Session.create(**kwargs))
-
+    )
     await db.payment_transactions.insert_one({
         "session_id": session.id,
         "lookup_key": req.lookup_key,
@@ -374,39 +328,34 @@ async def get_order(session_id: str):
     }
 
 
-@api_router.post("/stripe/webhook")
+@api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
-    payload = await request.body()
-    sig = request.headers.get("stripe-signature", "")
-    try:
-        event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
-    except stripe.error.SignatureVerificationError:
-        raise HTTPException(400, "Invalid signature")
-    obj, t = event["data"]["object"], event["type"]
-    if t == "checkout.session.completed":
-        details = obj.get("customer_details") or {}
-        await fulfil_order(obj["id"], payment_intent=obj.get("payment_intent"),
-                           subscription=obj.get("subscription"), customer_email=details.get("email"),
-                           customer=obj.get("customer"))
-    elif t == "checkout.session.async_payment_succeeded":
-        details = obj.get("customer_details") or {}
-        await fulfil_order(obj["id"], payment_intent=obj.get("payment_intent"),
-                           subscription=obj.get("subscription"), customer_email=details.get("email"),
-                           customer=obj.get("customer"))
+    body = await request.body()
+    host_url = str(request.base_url)
+    stripe_checkout = StripeCheckout(
+        api_key=os.environ["STRIPE_API_KEY"],
+        webhook_url=f"{host_url}api/webhook/stripe",
+    )
+    webhook_response = await stripe_checkout.handle_webhook(
+        body, request.headers.get("Stripe-Signature")
+    )
+    t = webhook_response.event_type
+    session_id = webhook_response.session_id
+    if t in ("checkout.session.completed", "checkout.session.async_payment_succeeded"):
+        s = await asyncio.to_thread(stripe.checkout.Session.retrieve, session_id)
+        email = s.customer_details.email if s.customer_details else None
+        await fulfil_order(session_id, payment_intent=s.payment_intent,
+                           subscription=s.subscription, customer_email=email,
+                           customer=s.customer)
     elif t == "checkout.session.async_payment_failed":
         await db.payment_transactions.update_one(
-            {"session_id": obj["id"]},
+            {"session_id": session_id},
             {"$set": {"status": "failed", "payment_status": "failed", "updated_at": datetime.now(timezone.utc)}},
         )
     elif t == "checkout.session.expired":
         await db.payment_transactions.update_one(
-            {"session_id": obj["id"]},
+            {"session_id": session_id},
             {"$set": {"status": "expired", "payment_status": "expired", "updated_at": datetime.now(timezone.utc)}},
-        )
-    elif t == "charge.refunded":
-        await db.payment_transactions.update_one(
-            {"stripe_payment_intent_id": obj.get("payment_intent")},
-            {"$set": {"status": "refunded", "payment_status": "refunded", "updated_at": datetime.now(timezone.utc)}},
         )
     return {"status": "ok"}
 
