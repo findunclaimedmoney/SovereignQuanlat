@@ -73,6 +73,9 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 - FAQ section ("Asked First"): legality, real trades (no), requirements, refunds, losing money, data privacy. NOTE: FAQ states a refund-if-won't-activate policy — owner can veto/adjust.
 - Concierge knowledge updated with free download, sample tearsheet, refund policy.
 
+## Implemented (2026-08-23, round 9)
+- Nav overlap hardening (user-reported on production, transient mid-load): nav now has permanent dark backdrop (not scroll-gated) and hero content has a guaranteed 72px safe zone below the nav; official hexagon logo (user-supplied) added to nav, favicon, apple-touch-icon, og:image. Stripe-side logo upload NOT possible via API (own-account restriction) — file ready at /app/sq-logo-stripe.png, user uploads in Dashboard → Settings → Branding.
+
 ## Backlog
 - P0: Rotate LICENCE_HMAC_SECRET to user's own secret before real sales; user to claim Stripe sandbox (onboarding link shared) or provide own key (BYOK switch).
 - P1: Customer portal to re-view licence keys by email; refund handling UI.

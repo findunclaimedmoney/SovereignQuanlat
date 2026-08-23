@@ -86,7 +86,7 @@ export const Hero = () => {
 
       <motion.div
         style={{ y, opacity }}
-        className="relative z-10 flex h-full flex-col justify-center px-6 md:px-12"
+        className="relative z-10 flex h-full flex-col justify-center px-6 md:px-12 pt-[72px]"
       >
         <motion.p
           initial={{ opacity: 0 }}

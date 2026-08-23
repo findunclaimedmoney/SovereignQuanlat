@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 
@@ -11,34 +10,24 @@ const scrollTo = (target) => {
 };
 
 export const Nav = () => {
-  const [scrolled, setScrolled] = useState(false);
   const { user } = useAuth();
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   return (
     <motion.header
       initial={{ y: -80 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.9, ease: [0.76, 0, 0.24, 1], delay: 0.2 }}
-      className={`fixed top-0 left-0 right-0 z-50 border-b transition-colors duration-500 ${
-        scrolled
-          ? "border-white/10 bg-black/60 backdrop-blur-2xl"
-          : "border-transparent bg-transparent"
-      }`}
+      className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-2xl"
       data-testid="main-nav"
     >
       <div className="flex items-center justify-between px-6 md:px-12 h-[72px]">
         <button
           onClick={() => scrollTo("#top")}
-          className="font-display text-sm md:text-base font-black tracking-tighter uppercase"
+          className="flex items-center gap-3 font-display text-sm md:text-base font-black tracking-tighter uppercase"
           data-testid="nav-logo"
         >
-          Sovereign<span className="text-[#FF3333]">//</span>Quant
+          <img src="/sq-logo.png" alt="Sovereign Quant logo" className="h-8 w-8 object-contain" />
+          <span>Sovereign<span className="text-[#FF3333]">//</span>Quant</span>
         </button>
 
         <nav className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.2em] text-zinc-400">
