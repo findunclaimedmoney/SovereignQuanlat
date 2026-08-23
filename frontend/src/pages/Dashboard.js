@@ -105,6 +105,38 @@ export default function Dashboard() {
           )}
         </section>
 
+        <section className="mt-14" data-testid="dashboard-orders-section">
+          <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">Order History</h2>
+          {data.orders.length === 0 ? (
+            <p className="border border-white/10 bg-[#0A0A0A] p-6 text-sm text-zinc-500">No orders on this email yet.</p>
+          ) : (
+            <div className="border border-white/10">
+              <div className="grid grid-cols-12 gap-2 border-b border-white/10 px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+                <span className="col-span-3">Tier</span>
+                <span className="col-span-3">Amount</span>
+                <span className="col-span-3">Status</span>
+                <span className="col-span-3 text-right">Date</span>
+              </div>
+              {data.orders.map((o, i) => (
+                <div key={o.session_id} className="grid grid-cols-12 gap-2 px-4 py-4 text-xs border-b border-white/5" data-testid={`order-row-${i}`}>
+                  <span className="col-span-3 text-[#F5F5F0]">{o.tier || "—"}</span>
+                  <span className="col-span-3 tabular text-zinc-300">
+                    {o.amount != null ? `$${o.amount.toLocaleString()} ${String(o.currency || "").toUpperCase()}` : "—"}
+                  </span>
+                  <span className={`col-span-3 uppercase tracking-wider ${
+                    o.payment_status === "paid" ? "text-[#00FF66]" : o.payment_status === "refunded" ? "text-[#FF3333]" : "text-zinc-500"
+                  }`}>
+                    {o.payment_status}{o.revoked ? " / revoked" : ""}{o.has_key ? " / key active" : ""}
+                  </span>
+                  <span className="col-span-3 text-right text-zinc-500 tabular">
+                    {o.created_at ? new Date(o.created_at).toLocaleDateString() : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section className="mt-14" data-testid="dashboard-referral-section">
           <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">
             Referral Program — 2.5% Rebate
@@ -143,6 +175,16 @@ export default function Dashboard() {
             <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
               Lifetime referred spend: ${data.referral.lifetime_spend.toLocaleString()} // Lifetime rebate: ${data.referral.lifetime_rebate.toFixed(2)}
             </p>
+            {data.referral.paid_months?.includes(data.referral.month) && (
+              <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-[#00FF66]" data-testid="rebate-paid-tag">
+                This month's rebate has been marked as paid
+              </p>
+            )}
+            {data.referral.payouts?.length > 0 && (
+              <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-zinc-600" data-testid="rebate-payout-history">
+                Payout history: {data.referral.payouts.map((p) => `${p.month} $${p.amount.toFixed(2)}`).join(" // ")}
+              </p>
+            )}
           </div>
         </section>
 

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SQ Docs Portal — Sovereign Quant Documentation</title>
+    <meta
+      name="description"
+      content="SQ Docs Portal is the official Sovereign Quant documentation hub for installation, licence activation, and frequently asked questions."
+    />
+    <meta
+      name="keywords"
+      content="Sovereign Quant, SQ Docs, documentation, licence activation, installation, offline licensing"
+    />
+    <meta name="author" content="Sovereign Quant" />
+    <meta name="theme-color" content="#09090b" />
+
+    <meta property="og:title" content="SQ Docs Portal" />
+    <meta
+      property="og:description"
+      content="Minimal dark-mode documentation portal for Sovereign Quant with installation, licence activation, and FAQ guidance."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://example.com" />
+    <meta property="og:image" content="https://example.com/og-image.jpg" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SQ Docs Portal" />
+    <meta
+      name="twitter:description"
+      content="Official Sovereign Quant documentation portal."
+    />
+    <meta name="twitter:image" content="https://example.com/og-image.jpg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/main.css" />
+    <script defer src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="js/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <div class="page-shell" aria-hidden="true">
+      <div class="grid-noise"></div>
+      <div class="glow glow-a"></div>
+      <div class="glow glow-b"></div>
+    </div>
+
+    <header class="site-header" id="top">
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="#hero" aria-label="SQ Docs Portal home">
+          <span class="brand-mark">SQ</span>
+          <span class="brand-text">Docs Portal</span>
+        </a>
+
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="nav-menu"
+          aria-label="Open navigation menu"
+        >
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="nav-menu" id="nav-menu">
+          <a href="#installation">Installation</a>
+          <a href="#activation">Activation</a>
+          <a href="#faq">FAQ</a>
+          <a class="nav-cta" href="#activation">Get Licensed</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main-content">
+      <section class="hero section" id="hero">
+        <div class="container hero-grid">
+          <div class="hero-copy reveal">
+            <p class="eyebrow">OFFICIAL DOCUMENTATION // DARK MODE DEFAULT</p>
+            <h1>SQ Docs Portal</h1>
+            <p class="hero-lead">
+              Minimal, terminal-driven documentation for Sovereign Quant products.
+              Install fast. Activate cleanly. Operate with sole ownership.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#installation">Start Installation</a>
+              <a class="button button-secondary" href="#faq">Read FAQ</a>
+            </div>
+            <ul class="hero-meta" aria-label="Portal highlights">
+              <li><span>[01]</span> Offline licensing</li>
+              <li><span>[02]</span> Monospace-first UI</li>
+              <li><span>[03]</span> Single-page fast access</li>
+            </ul>
+          </div>
+
+          <div class="hero-panel reveal">
+            <div class="terminal" role="img" aria-label="Terminal style setup preview">
+              <div class="terminal-topbar" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="terminal-body">
+                <p><span class="prompt">$</span> sq docs init</p>
+                <p><span class="accent">[ok]</span> package integrity verified</p>
+                <p><span class="accent">[ok]</span> runtime dependencies loaded</p>
+                <p><span class="prompt">$</span> sq licence activate --offline</p>
+                <p><span class="muted">enter licence key...</span></p>
+                <p><span class="accent">[live]</span> activation token issued</p>
+                <p><span class="prompt">$</span> launch sovereign-quant</p>
+                <p><span class="cursor" aria-hidden="true"></span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="installation" aria-labelledby="installation-title">
+        <div class="container">
+          <div class="section-heading reveal">
+            <p class="eyebrow">01 // INSTALLATION</p>
+            <h2 id="installation-title">Install in four clean steps</h2>
+            <p>
+              Follow the standard setup path to deploy your Sovereign Quant package
+              with precision and zero template bloat.
+            </p>
+          </div>
+
+          <div class="cards-grid steps-grid">
+            <article class="feature-card reveal" tabindex="0" aria-labelledby="step-1-title">
+              <div class="card-index">01</div>
+              <i data-lucide="download" aria-hidden="true"></i>
+              <h3 id="step-1-title">Download package</h3>
+              <p>
+                Retrieve the official build from your private delivery link and store
+                it in a secure local directory.
+              </p>
+            </article>
+
+            <article class="feature-card reveal" tabindex="0" aria-labelledby="step-2-title">
+              <div class="card-index">02</div>
+              <i data-lucide="archive" aria-hidden="true"></i>
+              <h3 id="step-2-title">Extract files</h3>
+              <p>
+                Unzip the release package and preserve the folder structure exactly
+                as delivered for correct runtime mapping.
+              </p>
+            </article>
+
+            <article class="feature-card reveal" tabindex="0" aria-labelledby="step-3-title">
+              <div class="card-index">03</div>
+              <i data-lucide="square-terminal" aria-hidden="true"></i>
+              <h3 id="step-3-title">Run installer</h3>
+              <p>
+                Execute the platform installer or launch script with administrator
+                permissions if your system policy requires it.
+              </p>
+            </article>
+
+            <article class="feature-card reveal" tabindex="0" aria-labelledby="step-4-title">
+              <div class="card-index">04</div>
+              <i data-lucide="shield-check" aria-hidden="true"></i>
+              <h3 id="step-4-title">Verify integrity</h3>
+              <p>
+                Confirm the application boots correctly and matches the release notes
+                before activating your licence.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="activation" aria-labelledby="activation-title">
+        <div class="container activation-layout">
+          <div class="section-heading reveal">
+            <p class="eyebrow">02 // LICENCE ACTIVATION</p>
+            <h2 id="activation-title">Activate your licence without friction</h2>
+            <p>
+              Sovereign Quant licensing is structured for clean ownership,
+              straightforward issuance, and controlled device authorization.
+            </p>
+          </div>
+
+          <div class="activation-grid">
+            <div class="terminal activation-terminal reveal" role="img" aria-label="Terminal style licence activation example">
+              <div class="terminal-topbar" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="terminal-body">
+                <p><span class="prompt">$</span> sq licence status</p>
+                <p><span class="muted">status:</span> not_activated</p>
+                <p><span class="prompt">$</span> sq licence activate ABCD-1234-EFGH-5678</p>
+                <p><span class="accent">[ok]</span> validating key format</p>
+                <p><span class="accent">[ok]</span> assigning device fingerprint</p>
+                <p><span class="accent">[ok]</span> writing local token</p>
+                <p><span class="muted">status:</span> activated</p>
+              </div>
+            </div>
+
+            <div class="info-stack">
+              <article class="info-panel reveal">
+                <h3>Activation flow</h3>
+                <ol>
+                  <li>Open the application or CLI entry point.</li>
+                  <li>Enter your issued licence key exactly as provided.</li>
+                  <li>Complete validation and store the local activation token.</li>
+                  <li>Restart the app if prompted to finalize configuration.</li>
+                </ol>
+              </article>
+
+              <article class="info-panel reveal">
+                <h3>Best practice</h3>
+                <p>
+                  Keep a secure copy of your licence key, activation receipt, and
+                  release package version so support can audit your environment quickly.
+                </p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="faq" aria-labelledby="faq-title">
+        <div class="container">
+          <div class="section-heading reveal">
+            <p class="eyebrow">03 // FAQ</p>
+            <h2 id="faq-title">Common operational questions</h2>
+            <p>
+              Fast answers for the most common setup and licensing scenarios.
+            </p>
+          </div>
+
+          <div class="faq-list">
+            <details class="faq-item reveal">
+              <summary>Can I activate on more than one machine?</summary>
+              <p>
+                Licence scope depends on your issued terms. Standard keys are commonly
+                bound to a defined number of devices or a single endpoint unless
+                otherwise specified.
+              </p>
+            </details>
+
+            <details class="faq-item reveal">
+              <summary>Do I need a permanent internet connection?</summary>
+              <p>
+                Not necessarily. Sovereign Quant supports controlled licensing flows,
+                including offline-oriented deployment paths where applicable to your
+                product edition.
+              </p>
+            </details>
+
+            <details class="faq-item reveal">
+              <summary>What if my activation fails?</summary>
+              <p>
+                Verify the key format, package version, and local permissions first.
+                If the issue persists, contact support with your device fingerprint,
+                release version, and activation timestamp.
+              </p>
+            </details>
+
+            <details class="faq-item reveal">
+              <summary>Can I move my licence to another device?</summary>
+              <p>
+                In most managed cases, yes—subject to licence terms and possible
+                deactivation on the prior device. Keep your original purchase record
+                available for expedited reassignment.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <a class="brand footer-brand" href="#hero">
+            <span class="brand-mark">SQ</span>
+            <span class="brand-text">Docs Portal</span>
+          </a>
+          <p class="footer-copy">
+            Sovereign Quant documentation interface built for direct access,
+            ownership clarity, and terminal-grade focus.
+          </p>
+        </div>
+
+        <div>
+          <h3>Sections</h3>
+          <ul class="footer-links">
+            <li><a href="#hero">Hero</a></li>
+            <li><a href="#installation">Installation</a></li>
+            <li><a href="#activation">Activation</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3>Brand</h3>
+          <ul class="footer-links">
+            <li><a href="#top">Top</a></li>
+            <li><a href="#main-content">Docs</a></li>
+            <li><a href="#activation">Licence</a></li>
+          </ul>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

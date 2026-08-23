@@ -44,9 +44,20 @@ export const Nav = () => {
         <nav className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.2em] text-zinc-400">
           {[
             ["Manifesto", "#manifesto", "nav-manifesto-link"],
-            ["Protocol", "#manifesto", "nav-protocol-link"],
             ["Pricing", "#pricing", "nav-pricing-link"],
+            ["Guide", "/guide", "nav-guide-link"],
           ].map(([label, href, id], i) => (
+            href.startsWith("/") ? (
+              <a
+                key={id + i}
+                href={href}
+                className="relative group py-2 hover:text-[#F5F5F0] transition-colors duration-300"
+                data-testid={id}
+              >
+                {label}
+                <span className="absolute left-0 bottom-0 h-px w-0 bg-[#FF3333] transition-[width] duration-300 group-hover:w-full" />
+              </a>
+            ) : (
             <button
               key={id + i}
               onClick={() => scrollTo(href)}
@@ -56,6 +67,7 @@ export const Nav = () => {
               {label}
               <span className="absolute left-0 bottom-0 h-px w-0 bg-[#FF3333] transition-[width] duration-300 group-hover:w-full" />
             </button>
+            )
           ))}
         </nav>
 

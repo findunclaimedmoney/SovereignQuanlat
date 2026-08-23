@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, X, CornerDownLeft } from "lucide-react";
+import { Bot, X, CornerDownLeft, Trash2, Brain } from "lucide-react";
+import { toast } from "sonner";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const MODES = [
+  ["sales", "Sales"],
+  ["support", "Support"],
+  ["quant", "Quant Desk"],
+];
 
 const getSessionId = () => {
   let id = localStorage.getItem("sq_concierge_session");
@@ -13,22 +21,57 @@ const getSessionId = () => {
   return id;
 };
 
+const GREETING = {
+  role: "assistant",
+  content:
+    "AXIOM online. I advise on Sovereign Quant licensing, tiers and deployment — and I remember what matters between visits. State your query.",
+};
+
 export const Concierge = () => {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content:
-        "AXIOM online. I advise on Sovereign Quant licensing, tiers and deployment. State your query.",
-    },
-  ]);
+  const [messages, setMessages] = useState([GREETING]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [mode, setMode] = useState("sales");
+  const [memories, setMemories] = useState([]);
+  const [showMemories, setShowMemories] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, open]);
+
+  const refreshMemory = async () => {
+    try {
+      const { data } = await axios.get(`${API}/chat/memory/${getSessionId()}`);
+      setMemories(data.facts || []);
+    } catch {
+      /* non-fatal */
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return undefined;
+    refreshMemory();
+    axios
+      .get(`${API}/chat/history/${getSessionId()}`)
+      .then(({ data }) => {
+        if (data.messages.length > 0) setMessages([GREETING, ...data.messages]);
+      })
+      .catch(() => {});
+    return undefined;
+  }, [open]);
+
+  const clearChat = async () => {
+    try {
+      await axios.post(`${API}/chat/clear`, { session_id: getSessionId() });
+      setMessages([GREETING]);
+      setMemories([]);
+      toast.success("CONCIERGE MEMORY WIPED");
+    } catch {
+      toast.error("CLEAR FAILED");
+    }
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -40,7 +83,7 @@ export const Concierge = () => {
       const res = await fetch(`${API}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: getSessionId(), message: text }),
+        body: JSON.stringify({ session_id: getSessionId(), message: text, mode }),
       });
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -72,6 +115,7 @@ export const Concierge = () => {
           }
         }
       }
+      refreshMemory();
     } catch {
       setMessages((m) => {
         const copy = [...m];
@@ -103,21 +147,64 @@ export const Concierge = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.97 }}
             transition={{ duration: 0.35, ease: [0.76, 0, 0.24, 1] }}
-            className="fixed bottom-24 right-6 z-50 flex h-[480px] w-[calc(100vw-3rem)] max-w-sm flex-col border border-white/10 bg-black/70 backdrop-blur-2xl"
+            className="fixed bottom-24 right-6 z-50 flex h-[520px] w-[calc(100vw-3rem)] max-w-sm flex-col border border-white/10 bg-black/70 backdrop-blur-2xl"
             data-testid="concierge-panel"
           >
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.25em]">Axiom // Concierge</p>
                 <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-1">
-                  Claude // Sovereign Quant
+                  Claude // Persistent Memory
                 </p>
               </div>
-              <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#00FF66]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00FF66] animate-pulse" />
-                Live
-              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowMemories((s) => !s)}
+                  className={`flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] transition-colors duration-200 ${
+                    memories.length ? "text-[#00FF66]" : "text-zinc-600"
+                  }`}
+                  aria-label="View remembered facts"
+                  data-testid="concierge-memory-button"
+                >
+                  <Brain className="h-3.5 w-3.5" /> {memories.length}
+                </button>
+                <button
+                  onClick={clearChat}
+                  className="text-zinc-600 hover:text-[#FF3333] transition-colors duration-200"
+                  aria-label="Clear chat and memory"
+                  data-testid="concierge-clear-button"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
+
+            <div className="flex border-b border-white/10" data-testid="concierge-mode-toggle">
+              {MODES.map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setMode(id)}
+                  className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-200 ${
+                    mode === id ? "bg-white text-black" : "text-zinc-500 hover:text-white"
+                  }`}
+                  data-testid={`concierge-mode-${id}-button`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {showMemories && (
+              <div className="border-b border-white/10 px-5 py-3 max-h-28 overflow-y-auto" data-testid="concierge-memory-panel">
+                {memories.length === 0 ? (
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-[0.15em]">Nothing remembered yet.</p>
+                ) : (
+                  memories.map((f, i) => (
+                    <p key={i} className="text-[10px] text-zinc-400 leading-relaxed">— {f}</p>
+                  ))
+                )}
+              </div>
+            )}
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4" data-testid="concierge-messages">
               {messages.map((m, i) => (

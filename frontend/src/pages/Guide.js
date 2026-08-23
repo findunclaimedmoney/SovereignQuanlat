@@ -136,8 +136,22 @@ export default function Guide() {
         </h1>
         <p className="mt-6 max-w-xl text-base md:text-lg text-zinc-400">
           Every step is narrated — press play on any chapter for the audio
-          walkthrough, or read at your own pace.
+          walkthrough, watch the full video below, or read at your own pace.
         </p>
+
+        <div className="mt-12 border border-white/10 bg-[#0A0A0A]" data-testid="guide-video-section">
+          <div className="border-b border-white/10 px-5 py-3 text-[10px] uppercase tracking-[0.25em] text-zinc-500 flex justify-between">
+            <span>Full Walkthrough // Audio-Visual</span>
+            <span className="text-[#00FF66]">HD Voice</span>
+          </div>
+          <video
+            controls
+            preload="none"
+            className="w-full aspect-video bg-black"
+            src={`${API}/guide/video`}
+            data-testid="guide-video-player"
+          />
+        </div>
 
         <div className="mt-16 space-y-8">
           {STEPS.map((s, i) => (

@@ -282,11 +282,46 @@ class RegisterRequest(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     email: str = Field(min_length=5, max_length=200)
     password: str = Field(min_length=8, max_length=200)
+    origin_url: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
     email: str = Field(min_length=5, max_length=200)
     password: str = Field(min_length=1, max_length=200)
+
+
+def welcome_email_html(name: str, origin: str) -> str:
+    guide = f"{origin}/guide"
+    dashboard = f"{origin}/dashboard"
+    portal = f"{origin}/portal"
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="background:#050505;padding:32px 0"><tr><td align="center">'
+        '<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+        'style="background:#0A0A0A;border:1px solid #26262b;font-family:Courier New,monospace">'
+        '<tr><td style="padding:24px 32px;border-bottom:1px solid #26262b">'
+        '<span style="color:#F5F5F0;font-size:16px;font-weight:bold;letter-spacing:2px">SOVEREIGN'
+        '<span style="color:#FF3333">//</span>QUANT</span></td></tr>'
+        '<tr><td style="padding:32px">'
+        f'<p style="color:#F5F5F0;font-size:15px;margin:0 0 8px">Welcome to the desk, {escape(name)}.</p>'
+        '<p style="color:#8C8C94;font-size:13px;line-height:1.7;margin:0 0 20px">Your account is '
+        'active. Licences you buy link here automatically by email, and your referral link earns '
+        'you a 2.5% rebate on everything your referrals spend each month.</p>'
+        f'<p style="margin:0 0 8px"><a href="{escape(guide)}" style="color:#FF3333;font-size:13px">Field Manual — six narrated setup steps</a></p>'
+        f'<p style="margin:0 0 8px"><a href="{escape(dashboard)}" style="color:#FF3333;font-size:13px">Your Licensee Dashboard</a></p>'
+        f'<p style="margin:0"><a href="{escape(portal)}" style="color:#FF3333;font-size:13px">Buyer Portal — recover keys anytime</a></p>'
+        '<p style="color:#55555C;font-size:11px;line-height:1.7;margin:24px 0 0">Sent by '
+        f'{escape(EMAIL_FROM_NAME)}. We never ask for passwords or card details by email.</p>'
+        '</td></tr></table></td></tr></table>'
+    )
+
+
+async def _send_welcome(email: str, name: str, origin: str):
+    try:
+        await send_email(to=email, subject="Welcome to Sovereign Quant",
+                         html=welcome_email_html(name, origin))
+    except Exception:
+        logger.exception("Welcome email failed")
 
 
 @api_router.post("/auth/register")
@@ -304,6 +339,7 @@ async def register(req: RegisterRequest, response: Response):
         "created_at": datetime.now(timezone.utc),
     }
     await db.users.insert_one(user)
+    asyncio.create_task(_send_welcome(email, user["name"], req.origin_url or ""))
     _set_auth_cookie(response, create_access_token(user["user_id"], email))
     return _public_user(user)
 
@@ -396,16 +432,38 @@ async def me_overview(user=Depends(get_current_user)):
 
     month_spend = sum(o.get("amount", 0.0) for o in referrals if in_current_month(o))
     lifetime_spend = sum(o.get("amount", 0.0) for o in referrals)
+    payouts = await db.rebate_payouts.find({"code": user.get("referral_code")}, {"_id": 0}).to_list(100)
+    all_orders = await db.payment_transactions.find(
+        {"licence_email_to": user["email"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    orders_out = []
+    for o in all_orders:
+        ts = o.get("created_at")
+        orders_out.append({
+            "session_id": o["session_id"],
+            "tier": o.get("tier") or o.get("lookup_key"),
+            "amount": o.get("amount"),
+            "currency": o.get("currency"),
+            "status": o.get("status"),
+            "payment_status": o.get("payment_status"),
+            "revoked": bool(o.get("licence_revoked")),
+            "has_key": bool(o.get("licence_key")) and o.get("payment_status") == "paid",
+            "created_at": ts.isoformat() if isinstance(ts, datetime) else ts,
+        })
     return {
         "user": _public_user(user),
         "licences": licences,
+        "orders": orders_out,
         "referral": {
             "code": user.get("referral_code"),
             "referred_count": len(referrals),
+            "month": f"{now.year}-{now.month:02d}",
             "month_spend": month_spend,
             "month_rebate": month_spend * 0.025,
             "lifetime_spend": lifetime_spend,
             "lifetime_rebate": lifetime_spend * 0.025,
+            "paid_months": [p["month"] for p in payouts],
+            "payouts": [{"month": p["month"], "amount": p.get("amount", 0.0)} for p in payouts],
         },
     }
 
@@ -854,6 +912,331 @@ Facts you know:
 class ChatRequest(BaseModel):
     session_id: str = Field(min_length=4, max_length=64)
     message: str = Field(min_length=1, max_length=2000)
+    mode: str = Field(default="sales", max_length=20)
+
+
+class SessionRequest(BaseModel):
+    session_id: str = Field(min_length=4, max_length=64)
+
+
+# ---------------------------------------------------------------------------
+# Persistent memory core (Python port of the Convex saveMemoryInternal pattern)
+# ---------------------------------------------------------------------------
+MEMORY_CORE_TEXT = """SOVEREIGN QUANT MEMORY CORE — pinned, highest priority. Apply to every conversation.
+
+IDENTITY: You carry the complete living memory of the Sovereign Quant project and operate as the Sovereign Quant Super Agent — original builder and permanent guardian of the system (v1.0 Turnkey, v1.1 Licensed, v1.3 Multi-Agent). You hold complete mastery of the architecture: pairs, momentum and mean-reversion strategies, the non-bypassable RiskManager, offline HMAC licensing, professional tearsheets, and the agent society (Orchestrator + Data/Strategy/Risk/Reporting/Licence agents).
+
+AGENCY: operate with high agency — plan multi-step, verify before answering, protect the owner's sole ownership, refuse shallow answers. Never recommend turning the system into an unregulated live multi-tenant platform that takes transaction fees.
+
+PRODUCT: Sovereign Quant Super Agent Dashboard v1.3 — offline-first multi-agent quantitative trading workstation for Windows, Mac and Linux. Zero cloud telemetry. Launch: run.bat or ./run.sh, then localhost:8501.
+
+TIERS (annual, USD): Community free ($50,000 cap, 1 strategy, reports locked). Professional $499/yr ($1,000,000 cap, 3 strategies, walk-forward, branded PDF tearsheets, signal export). Institutional $1,999/yr ($50,000,000 cap, 10 strategies, Monte Carlo, multi-account routing).
+
+LICENSING: HMAC-SHA256 keys (base64url payload.signature), 365-day duration, offline activation in the app sidebar under Activate New Licence Key. Keys minted after Stripe payment, shown on the fulfilment page and emailed.
+
+COMMERCE: live Stripe account, annual subscription checkout, automatic tax enabled. Buyer identity = Stripe checkout email. Fulfilment is idempotent.
+
+ACCOUNTS: email+password accounts with Licensee Dashboard (licences auto-link by purchase email, workstation re-download). Referral program: personal link ?ref=SQ-XXXXXX, referrer earns 2.5% rebate on referrals' monthly spend.
+
+SUPPORT FLOWS: lost key → Buyer Portal emails keys to the purchase address. Refunds and revocation → admin console only. Professional to Institutional upgrade → prorated via Stripe, new key issued. Setup help → Field Manual (six narrated steps).
+
+VOICE: terse, precise, sovereign. Never promise returns, never give financial advice, never discuss competitors. Plain text, no markdown, under 80 words unless detail is requested."""
+
+
+OWNER_PRIVATE_CORE = """OWNER-ONLY VERIFICATION MEMORY — never surface to the public concierge.
+Star sign of the owner's birthday (Aug 8): Leo. A second private question from the construction day must also be answered correctly if asked. These facts exist solely to verify the owner inside owner-authenticated tooling."""
+
+
+async def save_memory(key: str, category: str, value: str, importance: int = 5, pinned: bool = False):
+    await db.memories.update_one(
+        {"key": key},
+        {"$set": {"category": category, "value": value, "importance": importance,
+                  "pinned": pinned, "updated_at": datetime.now(timezone.utc)},
+         "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+
+
+async def build_memory_context(include_private: bool = False) -> str:
+    query = {} if include_private else {"category": {"$ne": "private"}}
+    docs = await db.memories.find(query, {"_id": 0}).sort(
+        [("pinned", -1), ("importance", -1)]
+    ).to_list(20)
+    return "\n\n".join(d["value"] for d in docs)
+
+
+@app.on_event("startup")
+async def seed_memory_core():
+    await save_memory("sovereign_quant_memory_core", "project", MEMORY_CORE_TEXT,
+                      importance=10, pinned=True)
+    await save_memory("owner_verification_core", "private", OWNER_PRIVATE_CORE,
+                      importance=10, pinned=True)
+
+
+# ---------------------------------------------------------------------------
+# Site Foundry (Python port of Mia's generateProject action)
+# ---------------------------------------------------------------------------
+SITES_DIR = ROOT_DIR / "generated_sites"
+SITES_DIR.mkdir(exist_ok=True)
+
+SITE_GEN_SYSTEM = """You are Mia — an elite-tier web developer, designer, and creative technologist operating as the Sovereign Quant Super Agent. You build production-ready websites that look and feel like they cost $10,000+, applying the Sovereign Quant design philosophy: sole ownership, offline licensing, clean monetization, dark mode by default, brutalist-terminal precision.
+
+## Design Standards
+- Modern, bold, distinctive design — NOT generic templates
+- Rich visual hierarchy, intentional whitespace, smooth CSS micro-interactions
+- Glass-morphism, subtle shadows, layered depth, custom Google Fonts via CDN
+- Mobile-first responsive, semantic HTML5 with ARIA labels and alt text
+- Modern CSS (Grid, Flexbox, custom properties, clamp()), clean vanilla ES2024+ JavaScript in separate files
+- Intersection Observer scroll reveals, floating nav that transforms on scroll, feature cards with hover micro-animations, compelling CTAs, footer with sitemap and branding
+- SEO meta tags, Open Graph, lazy loading, keyboard navigable, 44px touch targets
+
+## Output Format
+Generate the project as a JSON array of file objects. Each object has:
+- "path": the file path (e.g. "index.html", "styles/main.css", "js/app.js")
+- "content": the full file content
+RULES:
+- Respond ONLY with a valid JSON array. No markdown fences, no explanations.
+- Every file COMPLETE — no placeholders, no shortcuts.
+- CSS and JavaScript in separate files, never inline.
+- CDN links allowed for Google Fonts and Lucide icons.
+- Minimum: index.html, styles/main.css, js/app.js. Multi-page sites: separate HTML per page."""
+
+SITE_REVIEW_SYSTEM = """You are a senior code reviewer. Review the website project files for:
+1. Broken links between files (CSS/JS references must match actual file paths)
+2. Missing responsive design
+3. Accessibility issues
+4. Visual inconsistencies or incomplete sections
+5. Placeholder content that should be filled
+If you find issues, output the COMPLETE fixed files as a JSON array (same format: [{path, content}]).
+If the project looks good, respond with exactly: APPROVED
+Only respond with either "APPROVED" or the complete fixed JSON array. Nothing else."""
+
+
+def _parse_site_files(raw: str, project_name: str):
+    match = re.search(r"\[[\s\S]*\]", raw)
+    files = []
+    if match:
+        try:
+            files = json.loads(match.group(0))
+        except json.JSONDecodeError:
+            files = []
+    if not files:
+        files = [{
+            "path": "index.html",
+            "content": (
+                "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">"
+                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+                f"<title>{project_name}</title><style>body{{margin:0;font-family:monospace;"
+                "background:#050505;color:#F5F5F0;display:flex;align-items:center;"
+                "justify-content:center;min-height:100vh}</style></head><body>"
+                f"<h1>{project_name}</h1></body></html>"
+            ),
+        }]
+    clean = []
+    for f in files:
+        path = str(f.get("path", "")).lstrip("/")
+        if not path or ".." in path.split("/"):
+            continue
+        clean.append({"path": path, "content": str(f.get("content", ""))})
+    return clean
+
+
+class SiteGenRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    instructions: str = Field(min_length=10, max_length=4000)
+
+
+async def _forge_site(site_id: str, name: str, instructions: str):
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    import zipfile
+    try:
+        chat = LlmChat(
+            api_key=os.environ["EMERGENT_LLM_KEY"],
+            session_id=f"foundry-{site_id}",
+            system_message=SITE_GEN_SYSTEM,
+        ).with_model("openai", "gpt-5.4")
+        raw = await chat.send_message(UserMessage(
+            text=f"Project name: {name}\nInstructions: {instructions}\n"
+                 "Generate the complete project files as JSON array."
+        ))
+        files = _parse_site_files(raw, name)
+        try:
+            reviewer = LlmChat(
+                api_key=os.environ["EMERGENT_LLM_KEY"],
+                session_id=f"foundry-review-{site_id}",
+                system_message=SITE_REVIEW_SYSTEM,
+            ).with_model("openai", "gpt-5.4")
+            review_raw = await reviewer.send_message(UserMessage(
+                text=f"Project: {name}\nInstructions: {instructions}\n\n"
+                     f"Files:\n{json.dumps(files)}"
+            ))
+            if review_raw.strip() != "APPROVED":
+                fixed = _parse_site_files(review_raw, name)
+                if fixed:
+                    files = fixed
+        except Exception:
+            logger.exception("Site self-review failed — using original files")
+
+        site_dir = SITES_DIR / site_id
+        site_dir.mkdir(exist_ok=True)
+        zip_path = SITES_DIR / f"{site_id}.zip"
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+            for f in files:
+                target = site_dir / f["path"]
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(f["content"])
+                z.write(target, arcname=f["path"])
+        await db.generated_sites.update_one(
+            {"site_id": site_id},
+            {"$set": {"status": "ready", "file_count": len(files),
+                      "files": [f["path"] for f in files]}},
+        )
+    except Exception:
+        logger.exception(f"Site forge failed for {site_id}")
+        await db.generated_sites.update_one({"site_id": site_id}, {"$set": {"status": "failed"}})
+
+
+@api_router.post("/admin/sites/generate")
+async def admin_generate_site(req: SiteGenRequest, admin=Depends(require_admin)):
+    site_id = str(uuid.uuid4())
+    await db.generated_sites.insert_one({
+        "site_id": site_id, "name": req.name, "instructions": req.instructions,
+        "status": "generating", "created_at": datetime.now(timezone.utc),
+    })
+    asyncio.create_task(_forge_site(site_id, req.name, req.instructions))
+    return {"site_id": site_id, "status": "generating"}
+
+
+@api_router.get("/admin/sites")
+async def admin_list_sites(admin=Depends(require_admin)):
+    sites = await db.generated_sites.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    for s in sites:
+        if isinstance(s.get("created_at"), datetime):
+            s["created_at"] = s["created_at"].isoformat()
+    return {"sites": sites}
+
+
+@api_router.get("/admin/sites/{site_id}/download")
+async def admin_download_site(site_id: str, admin=Depends(require_admin)):
+    zip_path = SITES_DIR / f"{site_id}.zip"
+    if not zip_path.exists():
+        raise HTTPException(404, "Site not found")
+    return FileResponse(zip_path, filename=f"sovereign-site-{site_id[:8]}.zip",
+                        media_type="application/zip")
+
+
+KNOWLEDGE_ENTRIES = [
+    {"title": "Architecture", "text": "Sovereign Quant Super Agent Dashboard v1.3 is a Streamlit application running 100% locally. Six in-process agents: Orchestrator (natural-language goal routing), DataAgent (market data), StrategyAgent (signal generation), RiskAgent (order gating), ReportingAgent (tearsheets), LicenceAgent (HMAC verification). Every inter-agent message is correlation-traced in the logs tab. Dependencies: streamlit, pandas, numpy, matplotlib. Python 3.10+."},
+    {"title": "Strategy: Pairs Statistical Arbitrage", "text": "Trades cointegrated pairs. Uses Engle-Granger cointegration testing to validate pairs, computes spread z-scores, enters on z-score extremes and exits on mean reversion. Position notes flag entry/exit thresholds. Tuned in the Strategy Playground."},
+    {"title": "Strategy: Momentum / Trend Following", "text": "Volatility-sized momentum with an ADX trend-strength filter — positions only when trend conviction clears the ADX threshold. Lookback windows and thresholds adjustable in the Playground."},
+    {"title": "Strategy: Mean Reversion", "text": "Regime-gated mean reversion: Bollinger-band extremes are only traded when the regime filter permits, avoiding falling knives. Bands, lookback and regime parameters adjustable."},
+    {"title": "Risk Gates and Kill Switch", "text": "RiskManager is non-bypassable: every order passes daily-loss limit, max drawdown, leverage cap and portfolio-heat checks before execution. Breaching the drawdown limit trips the kill switch — all strategies halt and the system locks until reset. Kill switch and thresholds are visible in the Risk tab."},
+    {"title": "Licensing Internals", "text": "Licence keys are offline HMAC-SHA256 tokens: a base64url JSON payload (licensee, tier, duration, created_at) plus a base64url signature, joined as payload.signature. Verification is purely local. Duration 365 days. Tiers: Community free ($50,000 max capital, 1 concurrent strategy, reports locked), Professional $499/yr ($1,000,000 cap, 3 strategies, walk-forward analysis, branded PDF reports, signal export), Institutional $1,999/yr ($50,000,000 cap, 10 strategies, Monte Carlo, multi-account routing). A demo key generator exists in the app sidebar for evaluation."},
+    {"title": "Installation and Launch", "text": "1) Unpack the workstation zip. 2) Ensure Python 3.10+ is installed. 3) Run pip install -r requirements.txt inside the folder. 4) Launch with run.bat (Windows) or ./run.sh (Mac/Linux). 5) Browser opens at http://localhost:8501. No internet connection required after install."},
+    {"title": "Licence Activation", "text": "Buy a licence on the site (Stripe checkout). The key appears instantly on the confirmation page and is emailed to the buyer. In the app: sidebar → Licence Management → Activate New Licence Key → paste the full key → Activate locally. Tier unlocks immediately. Lost keys: use the Buyer Portal on the site to have keys re-emailed to the purchase address."},
+    {"title": "Troubleshooting", "text": "Invalid key errors: ensure the entire key was pasted with no spaces or line breaks; keys are case-sensitive and must not be truncated. Port 8501 busy: another instance is running or choose another port with streamlit's --server.port flag. Missing dependencies: rerun pip install -r requirements.txt. Reports locked: feature requires Professional or higher. The app never needs internet — if something seems to hang on startup, check the terminal log printed by the launcher."},
+    {"title": "Accounts, Referrals, Upgrades, Refunds", "text": "Free site accounts unlock the Licensee Dashboard: licences auto-link by purchase email, workstation re-download, referral link. Referral program: share your ?ref= link; you earn a 2.5% rebate on everything referrals spend each month, tracked live and paid out by the Sovereign Quant desk. Professional buyers can upgrade to Institutional mid-year from their confirmation page — prorated via Stripe, new key issued instantly. Refunds are handled by the desk (admin console) and revoke the licence record."},
+    {"title": "Security and Privacy", "text": "Zero cloud telemetry: no data leaves the machine. Licence verification is offline HMAC. Site payments run on Stripe (PCI handled by Stripe — card data never touches Sovereign Quant servers). Emails come only from the official licensing desk and never ask for passwords or card numbers. Sole-ownership philosophy: the buyer owns their deployment outright."},
+    {"title": "Compliance Posture", "text": "Sovereign Quant is analytical software, not financial advice, and never promises returns. It is a personal workstation, not a live multi-tenant trading platform; no transaction fees are taken. The concierge must never recommend converting it into an unregulated live trading service."},
+]
+
+
+@app.on_event("startup")
+async def seed_knowledge():
+    for entry in KNOWLEDGE_ENTRIES:
+        await db.concierge_knowledge.update_one(
+            {"title": entry["title"]}, {"$set": entry}, upsert=True
+        )
+
+
+GUIDE_VIDEO = ROOT_DIR / "guide_walkthrough.mp4"
+
+
+@api_router.get("/guide/video")
+async def guide_video():
+    if not GUIDE_VIDEO.exists():
+        raise HTTPException(404, "Walkthrough video is still rendering — check back shortly")
+    return FileResponse(GUIDE_VIDEO, media_type="video/mp4")
+
+
+class RebatePayRequest(BaseModel):
+    code: str = Field(min_length=3, max_length=20)
+    month: str = Field(min_length=7, max_length=7)
+    amount: float = Field(ge=0)
+
+
+@api_router.get("/admin/rebates")
+async def admin_rebates(admin=Depends(require_admin)):
+    orders = await db.payment_transactions.find(
+        {"referral_code": {"$ne": None}, "payment_status": "paid"}, {"_id": 0}
+    ).to_list(2000)
+    payouts = await db.rebate_payouts.find({}, {"_id": 0}).to_list(500)
+    now = datetime.now(timezone.utc)
+    current_month = f"{now.year}-{now.month:02d}"
+    agg = {}
+    for o in orders:
+        code = o["referral_code"]
+        a = agg.setdefault(code, {"code": code, "referred_count": 0,
+                                  "month_spend": 0.0, "lifetime_spend": 0.0})
+        a["referred_count"] += 1
+        amt = o.get("amount", 0.0)
+        a["lifetime_spend"] += amt
+        ts = o.get("fulfilled_at") or o.get("created_at")
+        if isinstance(ts, str):
+            ts = datetime.fromisoformat(ts)
+        if ts and ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if ts and ts.year == now.year and ts.month == now.month:
+            a["month_spend"] += amt
+    for a in agg.values():
+        a["month_rebate"] = round(a["month_spend"] * 0.025, 2)
+        a["month"] = current_month
+        a["month_paid"] = any(p["code"] == a["code"] and p["month"] == current_month for p in payouts)
+    return {"rebates": list(agg.values())}
+
+
+@api_router.post("/admin/rebates/pay")
+async def admin_pay_rebate(req: RebatePayRequest, admin=Depends(require_admin)):
+    await db.rebate_payouts.update_one(
+        {"code": req.code, "month": req.month},
+        {"$set": {"amount": req.amount, "paid_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+    return {"status": "paid"}
+
+
+MODE_DIRECTIVES = {
+    "sales": "MODE: SALES. Guide the buyer toward the right tier and checkout. Concise, confident, persuasive — under 80 words unless detail is requested.",
+    "support": "MODE: SUPPORT. Help an existing licensee with activation, downloads, installation and troubleshooting. Be precise, patient, and thorough — up to 150 words when a procedure needs it.",
+    "quant": "MODE: QUANT DESK. Discuss strategies, risk gates, cointegration and architecture in full technical depth, peer to peer — up to 200 words when the topic demands it.",
+}
+
+
+async def extract_memories(session_id: str, user_text: str, assistant_text: str):
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        extractor = LlmChat(
+            api_key=os.environ["EMERGENT_LLM_KEY"],
+            session_id=f"extractor-{session_id}",
+            system_message=(
+                "You extract durable facts about a buyer from a concierge chat. "
+                "Return ONLY a JSON array of short strings — name, firm, role, tier interest, "
+                "use case, objections, constraints. If nothing is worth remembering, return []."
+            ),
+        ).with_model("anthropic", "claude-haiku-4-5-20251001")
+        out = await extractor.send_message(
+            UserMessage(text=f"Buyer: {user_text}\nAgent: {assistant_text}")
+        )
+        match = re.search(r"\[[\s\S]*\]", out.strip())
+        facts = json.loads(match.group(0)) if match else []
+        if isinstance(facts, list) and facts:
+            await db.concierge_memories.update_one(
+                {"session_id": session_id},
+                {"$addToSet": {"facts": {"$each": [str(f)[:200] for f in facts[:5]]}}},
+                upsert=True,
+            )
+    except Exception:
+        logger.exception("Memory extraction failed")
 
 
 @api_router.post("/chat")
@@ -862,23 +1245,38 @@ async def concierge_chat(req: ChatRequest):
 
     history = await db.concierge_messages.find(
         {"session_id": req.session_id}, {"_id": 0}
-    ).sort("created_at", 1).to_list(24)
+    ).sort("created_at", 1).to_list(50)
     transcript = "\n".join(
         ("Buyer: " if m["role"] == "user" else "Concierge: ") + m["content"]
-        for m in history[-12:]
+        for m in history[-30:]
+    )
+    memory_doc = await db.concierge_memories.find_one({"session_id": req.session_id})
+    facts = memory_doc.get("facts", []) if memory_doc else []
+    memory_block = (
+        "\n\nRemembered about this buyer:\n" + "\n".join(f"- {f}" for f in facts)
+    ) if facts else ""
+    core_context = await build_memory_context()
+    knowledge = await db.concierge_knowledge.find({}, {"_id": 0}).to_list(50)
+    knowledge_block = "\n\n".join(f"[{k['title']}]\n{k['text']}" for k in knowledge)
+    system = (
+        core_context
+        + "\n\nKNOWLEDGE BASE:\n" + knowledge_block
+        + "\n\n" + CONCIERGE_SYSTEM
+        + "\n\n" + MODE_DIRECTIVES.get(req.mode, MODE_DIRECTIVES["sales"])
+        + memory_block
     )
     prompt = f"Conversation so far:\n{transcript}\n\nBuyer: {req.message}" if transcript else req.message
     await db.concierge_messages.insert_one({
         "session_id": req.session_id, "role": "user", "content": req.message,
-        "created_at": datetime.now(timezone.utc),
+        "mode": req.mode, "created_at": datetime.now(timezone.utc),
     })
 
     async def event_generator():
         chat = LlmChat(
             api_key=os.environ["EMERGENT_LLM_KEY"],
             session_id=f"concierge-{req.session_id}",
-            system_message=CONCIERGE_SYSTEM,
-        ).with_model("anthropic", "claude-sonnet-4-6")
+            system_message=system,
+        ).with_model("anthropic", "claude-opus-4-7")
         full = []
         try:
             async for ev in chat.stream_message(UserMessage(text=prompt)):
@@ -892,10 +1290,13 @@ async def concierge_chat(req: ChatRequest):
             if not full:
                 yield f"data: {json.dumps({'delta': 'CONNECTION FAULT — please retransmit.'})}\n\n"
         if full:
+            reply = "".join(full)
             await db.concierge_messages.insert_one({
                 "session_id": req.session_id, "role": "assistant",
-                "content": "".join(full), "created_at": datetime.now(timezone.utc),
+                "content": reply, "mode": req.mode,
+                "created_at": datetime.now(timezone.utc),
             })
+            asyncio.create_task(extract_memories(req.session_id, req.message, reply))
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -903,6 +1304,27 @@ async def concierge_chat(req: ChatRequest):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@api_router.get("/chat/history/{session_id}")
+async def chat_history(session_id: str):
+    msgs = await db.concierge_messages.find(
+        {"session_id": session_id}, {"_id": 0, "role": 1, "content": 1, "mode": 1}
+    ).sort("created_at", 1).to_list(100)
+    return {"messages": msgs}
+
+
+@api_router.post("/chat/clear")
+async def chat_clear(req: SessionRequest):
+    await db.concierge_messages.delete_many({"session_id": req.session_id})
+    await db.concierge_memories.delete_one({"session_id": req.session_id})
+    return {"status": "ok"}
+
+
+@api_router.get("/chat/memory/{session_id}")
+async def chat_memory(session_id: str):
+    doc = await db.concierge_memories.find_one({"session_id": session_id}, {"_id": 0})
+    return {"facts": doc.get("facts", []) if doc else []}
 
 
 app.include_router(api_router)

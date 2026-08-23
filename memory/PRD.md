@@ -46,6 +46,14 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 - Stripe env renamed to SOVEREIGN_STRIPE_KEY (platform pre-injects STRIPE_API_KEY=sk_test_emergent which shadows user key); load_dotenv override removed (deployment blocker fix).
 - Admin refund console (/admin): API-key gated, orders list, refund + subscription cancel + licence revoke.
 
+## Implemented (2026-08-23, round 4)
+- Concierge upgraded to full memory architecture (ported from user's Convex/Mia project): pinned project memory core (Sovereign Quant Super Agent identity, importance 10) + private owner-verification memory (never injected into public chat) + 12-entry knowledge base (strategies, risk gates, licensing internals, installation, activation, troubleshooting, accounts, security, compliance) seeded in Mongo + per-session fact extraction (claude-haiku) + 50-message history + modes (sales/support/quant). Brain upgraded to claude-opus-4-7.
+- Admin console: orders + refund/revoke, referral rebate payouts (mark-paid per code/month), Site Foundry (Python port of Mia's generateProject: gpt-5.4 generate → self-review → zip download, background task with status polling).
+- Dashboard: full order history + payout history added.
+- Guide: full audio-visual walkthrough video (6 narrated chapters, ffmpeg title cards + TTS audio, /api/guide/video).
+- Welcome email on registration (guardrail-gated template).
+- DECLINED: 3% per-trading-transaction fee — conflicts with user's own pinned memory core (no unregulated multi-tenant transaction-fee platform) and is regulated broker/exchange territory; offline software cannot meter trades server-side. Compliant monetization alternatives offered.
+
 ## Backlog
 - P0: Rotate LICENCE_HMAC_SECRET to user's own secret before real sales; user to claim Stripe sandbox (onboarding link shared) or provide own key (BYOK switch).
 - P1: Customer portal to re-view licence keys by email; refund handling UI.
