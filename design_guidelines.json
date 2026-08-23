@@ -1,0 +1,142 @@
+{
+  "theme": "dark",
+  "art_direction": "Swiss High-Contrast Meets Brutalist Terminal",
+  "typography": {
+    "headings": {
+      "font_family": "'Unbounded', sans-serif",
+      "weights": ["font-light", "font-black"],
+      "usage": "Use tight tracking (tracking-tighter) for massive text. Heavy use of uppercase."
+    },
+    "body": {
+      "font_family": "'JetBrains Mono', monospace",
+      "weights": ["font-normal", "font-medium"],
+      "usage": "Used for all functional text, pricing details, UI components, and the terminal aesthetic. Gives it a raw, unpolished 'quant' edge."
+    },
+    "hierarchy": {
+      "h1": "text-5xl md:text-7xl lg:text-[8vw] leading-[0.85] tracking-tighter uppercase font-black",
+      "h2": "text-4xl md:text-5xl lg:text-6xl leading-none tracking-tight uppercase font-black",
+      "h3": "text-2xl md:text-3xl font-light",
+      "body": "text-base md:text-lg leading-relaxed text-zinc-400",
+      "overline": "text-xs uppercase tracking-[0.2em] text-red-500 font-bold"
+    },
+    "import_url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Unbounded:wght@300;900&display=swap"
+  },
+  "colors": {
+    "background": {
+      "primary": "#050505",
+      "secondary": "#0A0A0A"
+    },
+    "surface": {
+      "default": "#111111",
+      "glass": "bg-black/40 backdrop-blur-2xl border border-white/10"
+    },
+    "text": {
+      "primary": "#F5F5F0",
+      "secondary": "#8C8C94",
+      "muted": "#55555C"
+    },
+    "accent": {
+      "primary": "#FF3333",
+      "secondary": "#FFFFFF"
+    },
+    "status": {
+      "success": "#00FF66",
+      "warning": "#FFB800",
+      "risk": "#FF3333"
+    }
+  },
+  "layouts": {
+    "hero": "100vh full-bleed, center-aligned kinetic typography overlaying a dark, abstract WebGL/3D scene or dark ambient product video.",
+    "manifesto": "The 'Tetris' Grid Protocol. Asymmetrical, sticky scroll elements. Wide gaps (gap-12). Numbered chapters utilizing massive outline fonts (text-transparent webkit-text-stroke-1px white/20).",
+    "pricing": "Dense bento-box style comparison. Use Aceternity 'Tracing Beam' effect for the Institutional tier card to make it glow.",
+    "spacing": "Generous spacing. py-32 to py-48 for section transitions. Container padding px-6 md:px-12."
+  },
+  "components": {
+    "buttons": {
+      "primary": "Sharp edges (rounded-none), bg-white text-black font-bold uppercase tracking-wider hover:bg-zinc-200 transition-colors px-8 py-4",
+      "secondary": "Sharp edges, border border-white/20 bg-transparent text-white hover:bg-white/5 transition-colors px-8 py-4",
+      "danger": "Sharp edges, bg-[#FF3333] text-white font-bold px-8 py-4 hover:bg-red-700 transition-colors"
+    },
+    "cards": {
+      "default": "Flat background (#111111), 1px subtle border (border-white/10), rounded-none, p-8 or p-12."
+    },
+    "chat_widget": {
+      "style": "Floating bottom right. Glassmorphism panel. Monospace typography for chat messages, resembling a command-line interface but polished."
+    },
+    "marquee": {
+      "style": "Slow editorial ribbon. font-mono text-sm tracking-[0.2em] uppercase text-zinc-500 border-y border-white/10 py-4. Gaps of 4rem between items."
+    }
+  },
+  "motion": {
+    "libraries": ["framer-motion", "lenis"],
+    "hero_reveal": "Masked line-by-line text reveal. Wrap each line of text in an overflow-hidden span, and use framer-motion to translate-y from 100% to 0 with ease-[0.76, 0, 0.24, 1].",
+    "scroll": "Use Lenis for smooth momentum scrolling. All sections should have a subtle fade and translate-y on scroll using framer-motion 'whileInView'.",
+    "microinteractions": "Hover states on pricing cards lift slightly (-translate-y-2) and reveal a subtle red inner shadow or border glow."
+  },
+  "media": {
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MDV8MHwxfHNlYXJjaHwxfHxmaW5hbmNpYWwlMjB0cmFkaW5nJTIwZGVzayUyMGRhcmt8ZW58MHx8fHwxNzg3NDUyNzQ1fDA&ixlib=rb-4.1.0&q=85",
+        "category": "product_hero",
+        "description": "Candlestick chart on dark screen. Use this as a texture/background for the strategy playground section."
+      },
+      {
+        "url": "https://images.pexels.com/photos/38412413/pexels-photo-38412413.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "manifesto_chapter_1",
+        "description": "Monitors displaying stock market charts in a dimly lit room. For multi-agent orchestrator chapter."
+      },
+      {
+        "url": "https://images.pexels.com/photos/37730212/pexels-photo-37730212.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "manifesto_chapter_3",
+        "description": "Close-up of server racks. Use for the 'offline licensing and non-bypassable risk gates' section to emphasize physical security."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1557264337-e8a93017fe92?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGRhdGElMjB2aXN1YWxpemF0aW9uJTIwZGFya3xlbnwwfHx8fDE3ODc0NTI3NDV8MA&ixlib=rb-4.1.0&q=85",
+        "category": "abstract_3d_alternative",
+        "description": "Concentric rings of liquid paint. Use as a blurred background texture if 3D Canvas is too heavy."
+      }
+    ],
+    "image_treatment": "All images should be clipped into strict rectangular or architectural frames (no rounded corners). Apply a grayscale filter with high contrast (grayscale contrast-125), and reveal full color on hover."
+  },
+  "3d_libraries": {
+    "primary": "@react-three/fiber",
+    "helpers": "@react-three/drei",
+    "strategy": "Implement a subtle, slow-rotating point-cloud or wireframe sphere in the hero section background to represent 'quantitative data models'. Ensure lighting is stark (directional light to create harsh shadows)."
+  },
+  "accessibility": {
+    "contrast": "Ensure all text against black backgrounds meets APCA standards. Use #F5F5F0 for primary text, never pure white (#FFFFFF) to reduce eye strain, except for buttons.",
+    "testing": "All interactive elements (buttons, links, pricing toggles, copy buttons) MUST have 'data-testid' attributes (e.g., data-testid='buy-institutional-button').",
+    "motion": "Wrap heavy animations in a 'prefers-reduced-motion' media query check."
+  },
+  "instructions_to_main_agent": [
+    "You are building a landing page with an integrated e-commerce checkout flow (Home -> Checkout Redirect -> Confirmation Page). Manage these views using React Router or simple conditional rendering if it's a SPA.",
+    "Install required dependencies: framer-motion, @studio-freight/lenis (or lenis), @react-three/fiber, @react-three/drei, three, lucide-react, react-fast-marquee, sonner.",
+    "Setup Lenis smooth scrolling at the top level of the app.",
+    "Import Unbounded and JetBrains Mono from Google Fonts in index.html or global CSS.",
+    "Implement the Hero section with a massive kinetic typography component. Use Framer Motion to animate text line-by-line (e.g., 'SOVEREIGN.', 'QUANT.', 'OFFLINE.').",
+    "For the Manifesto section, use a CSS grid (Grid Mode A: Tetris Grid). Incorporate large numbers (1, 2, 3...) using webkit-text-stroke to achieve the 'numbered chapters' requirement.",
+    "For the Pricing section, implement three distinct tiers. The 'Institutional' card should be visually dominant.",
+    "Implement a realistic-looking checkout confirmation page layout where the generated HMAC offline licence key is displayed with a 'Copy to Clipboard' function. This page should look highly technical, like an offline terminal.",
+    "Build a floating AI concierge widget (Claude AI style) in the bottom right using a dark glassmorphism aesthetic.",
+    "Use JetBrains Mono (or any available monospace font) for all UI/data-heavy elements (like the license key, price figures, and code snippets).",
+    "Do NOT center-align paragraphs. Keep them left-aligned for a structural, Swiss grid aesthetic.",
+    "DO NOT use completely transparent backgrounds for any overlapping component like headers or dropdowns. Use the specified glassmorphism or solid dark background."
+  ],
+  "universal_guidelines_for_main_agent": [
+    "Do not converge toward generic outputs (AI slop). Make this UI look like a high-end luxury fashion brand mixed with a brutalist coding terminal.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as generic gradients. Use solid #050505 and #111111.",
+    "Create depth through layered design elements with z-index hierarchy and 1px borders, rather than soft shadows.",
+    "You MUST NOT apply universal transition (transition: all). Use specific properties.",
+    "You MUST NOT center align the app container in CSS.",
+    "Use sharp corners (rounded-none) to emphasize the 'brutalist/swiss' aesthetic, instead of standard pill-shaped buttons everywhere (unless specifically called out).",
+    "Never use placeholder URLs. Use the provided image URLs.",
+    "All interactive elements MUST include a 'data-testid' attribute (e.g., data-testid='checkout-button', data-testid='copy-licence-key-button').",
+    "Use 'sonner' for toasts (e.g., for the 'License key copied' notification)."
+  ],
+  "general_ui_ux_guidelines": [
+    "Content Strategy: The message is absolute privacy and extreme performance. Text should be concise and authoritative.",
+    "Interaction: Buttons should feel highly responsive. Use scale transforms (`active:scale-95`) to give tactile feedback.",
+    "Navigation: A strict, sticky top navigation bar with a glass effect. Links should have subtle underline animations on hover.",
+    "Data Display: Use monospace fonts and tabular-nums for all pricing, metrics, and license keys to ensure horizontal alignment."
+  ]
+}
