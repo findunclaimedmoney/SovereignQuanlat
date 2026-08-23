@@ -213,7 +213,7 @@ def licence_email_html(licensee: str, tier: str, licence_key: str, success_url: 
     )
 
 
-async def fulfil_order(session_id: str, payment_intent=None, subscription=None, customer_email=None):
+async def fulfil_order(session_id: str, payment_intent=None, subscription=None, customer_email=None, customer=None):
     txn = await db.payment_transactions.find_one({"session_id": session_id})
     if not txn or txn.get("payment_status") == "paid":
         return
@@ -227,6 +227,7 @@ async def fulfil_order(session_id: str, payment_intent=None, subscription=None, 
             "licence_key": licence_key, "licence_duration_days": 365,
             "stripe_payment_intent_id": payment_intent,
             "stripe_subscription_id": subscription,
+            "stripe_customer_id": customer,
             "updated_at": datetime.now(timezone.utc),
         }},
     )
@@ -334,7 +335,8 @@ async def get_payment_status(session_id: str):
             if s.payment_status == "paid" or s.status == "complete":
                 email = s.customer_details.email if s.customer_details else None
                 await fulfil_order(session_id, payment_intent=s.payment_intent,
-                                   subscription=s.subscription, customer_email=email)
+                                   subscription=s.subscription, customer_email=email,
+                                   customer=s.customer)
                 record = await db.payment_transactions.find_one({"session_id": session_id})
         except stripe.error.StripeError:
             pass
@@ -384,11 +386,13 @@ async def stripe_webhook(request: Request):
     if t == "checkout.session.completed":
         details = obj.get("customer_details") or {}
         await fulfil_order(obj["id"], payment_intent=obj.get("payment_intent"),
-                           subscription=obj.get("subscription"), customer_email=details.get("email"))
+                           subscription=obj.get("subscription"), customer_email=details.get("email"),
+                           customer=obj.get("customer"))
     elif t == "checkout.session.async_payment_succeeded":
         details = obj.get("customer_details") or {}
         await fulfil_order(obj["id"], payment_intent=obj.get("payment_intent"),
-                           subscription=obj.get("subscription"), customer_email=details.get("email"))
+                           subscription=obj.get("subscription"), customer_email=details.get("email"),
+                           customer=obj.get("customer"))
     elif t == "checkout.session.async_payment_failed":
         await db.payment_transactions.update_one(
             {"session_id": obj["id"]},
