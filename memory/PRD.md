@@ -87,5 +87,8 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 ## Implemented (2026-08-23, round 11)
 - Deployment health check PASSED (no hardcoded secrets/URLs, correct ports, CORS ok, supervisor valid, frontend+backend live-smoke-tested 200). User chose to keep current LICENCE_HMAC_SECRET for now (rotation still on backlog). Awaiting user-triggered production redeploy from Emergent dashboard so quant-checkout.emergent.host picks up the navy/gold restyle, logo, and console bugfix.
 
+## Implemented (2026-08-23, round 12)
+- Guide media investigation (user QA report: narration + video "stuck at 0:00"): NO REAL BUG. Both /api/guide/video and /api/guide/narration/{1-6} serve correctly on preview AND production (200, correct content-type, fast; all 6 TTS mp3s cached on disk AND git-tracked; mp4 served on prod despite not being git-tracked — deployment snapshots filesystem). Root cause of QA false positive: test browsers use open-source Chromium without H.264/AAC codecs → video readyState 0; narration MP3 actually plays fine (verified: readyState 4, duration 22.3s, currentTime advancing). Hardening applied to Guide.js: video preload none→metadata, in-player fallback download link for codec-less browsers. MINOR: requires redeploy to reach production (cosmetic only — prod media already works).
+
 ## Next Tasks
 1. USER ACTION: redeploy to production from Emergent dashboard. 2. Rotate LICENCE_HMAC_SECRET before real sales (user deferred). 3. Upload logo in Stripe Dashboard → Settings → Branding (file at /app/sq-logo-stripe.png). 4. Stripe KYC.

@@ -146,11 +146,14 @@ export default function Guide() {
           </div>
           <video
             controls
-            preload="none"
+            preload="metadata"
             className="w-full aspect-video bg-black"
             src={`${API}/guide/video`}
             data-testid="guide-video-player"
-          />
+          >
+            Your browser cannot play this video —{' '}
+            <a href={`${API}/guide/video`} className="underline text-[#C9A227]">download the walkthrough instead</a>.
+          </video>
         </div>
 
         <div className="mt-16 space-y-8">
