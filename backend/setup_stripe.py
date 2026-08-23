@@ -4,8 +4,8 @@ from pathlib import Path
 import stripe
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / ".env", override=True)
-stripe.api_key = os.environ["STRIPE_API_KEY"]
+load_dotenv(Path(__file__).parent / ".env")
+stripe.api_key = os.environ["SOVEREIGN_STRIPE_KEY"]
 
 CATALOG = [
     {

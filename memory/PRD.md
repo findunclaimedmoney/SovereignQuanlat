@@ -39,6 +39,13 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 - Renewal reminders: daily background scanner emails licensees 30 days before their 365-day key expires (fulfilled_at window, renewal_reminded flag, branded template passes guardrail gate).
 - Branding: API rename blocked (own-account limitation); logo generated at /app/sq_logo.png — user must upload in Stripe Dashboard (Settings → Branding) and rename business there.
 
+## Implemented (2026-08-23, round 3)
+- Customer accounts: JWT cookie auth (register/login/logout/me), bcrypt hashes, 5-attempt/15-min brute-force lockout, unique email index. Test user: delivered@resend.dev.
+- Licensee Dashboard (/dashboard): licences auto-linked by checkout email (copy key + download), referral program — personal link ?ref=CODE, 2.5% monthly rebate on referred spend (verified: $499 → $12.48), lifetime stats. Checkout captures referral codes silently (?ref= + localStorage).
+- Field Manual (/guide): six-step setup walkthrough with per-step AI narration (OpenAI tts-1-hd, onyx voice, mp3 cached on disk, served via FileResponse with Range support).
+- Stripe env renamed to SOVEREIGN_STRIPE_KEY (platform pre-injects STRIPE_API_KEY=sk_test_emergent which shadows user key); load_dotenv override removed (deployment blocker fix).
+- Admin refund console (/admin): API-key gated, orders list, refund + subscription cancel + licence revoke.
+
 ## Backlog
 - P0: Rotate LICENCE_HMAC_SECRET to user's own secret before real sales; user to claim Stripe sandbox (onboarding link shared) or provide own key (BYOK switch).
 - P1: Customer portal to re-view licence keys by email; refund handling UI.

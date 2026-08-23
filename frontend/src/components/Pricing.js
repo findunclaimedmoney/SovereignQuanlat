@@ -79,6 +79,7 @@ export const Pricing = () => {
         lookup_key: selected.lookupKey,
         licensee_name: licensee.trim(),
         origin_url: window.location.origin,
+        referral_code: localStorage.getItem("sq_ref") || null,
       });
       window.location.href = data.checkout_url;
     } catch (e) {
@@ -223,6 +224,11 @@ export const Pricing = () => {
               className="rounded-none bg-black/40 border-white/15 font-mono"
               data-testid="licensee-name-input"
             />
+            {typeof window !== "undefined" && localStorage.getItem("sq_ref") && (
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#00FF66]" data-testid="referral-applied-note">
+                Referral {localStorage.getItem("sq_ref")} applied — your referrer earns 2.5%
+              </p>
+            )}
             <button
               onClick={startCheckout}
               disabled={loading}

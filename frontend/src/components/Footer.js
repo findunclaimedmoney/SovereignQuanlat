@@ -32,7 +32,10 @@ export const Footer = () => (
 
     <div className="mt-16 pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between gap-4 text-[10px] uppercase tracking-[0.25em] text-zinc-600">
       <span>© 2026 Sovereign Quant Systems</span>
-      <span>Zero telemetry // Zero cloud // Zero compromise</span>
+      <span className="flex gap-8">
+        <a href="/portal" className="hover:text-zinc-300 transition-colors duration-200" data-testid="footer-portal-link">Buyer Portal</a>
+        <span>Zero telemetry // Zero cloud // Zero compromise</span>
+      </span>
     </div>
   </footer>
 );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 
 const scrollTo = (target) => {
   if (window.__lenis) {
@@ -11,6 +12,7 @@ const scrollTo = (target) => {
 
 export const Nav = () => {
   const [scrolled, setScrolled] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -57,13 +59,22 @@ export const Nav = () => {
           ))}
         </nav>
 
-        <button
-          onClick={() => scrollTo("#pricing")}
-          className="bg-white text-black text-xs font-bold uppercase tracking-wider px-5 py-3 hover:bg-zinc-200 active:scale-95 transition-[background-color,transform] duration-200"
-          data-testid="nav-acquire-licence-button"
-        >
-          Acquire Licence
-        </button>
+        <div className="flex items-center gap-4">
+          <a
+            href={user ? "/dashboard" : "/login"}
+            className="hidden md:inline-block text-xs uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors duration-300"
+            data-testid="nav-account-link"
+          >
+            {user ? "Dashboard" : "Sign In"}
+          </a>
+          <button
+            onClick={() => scrollTo("#pricing")}
+            className="bg-white text-black text-xs font-bold uppercase tracking-wider px-5 py-3 hover:bg-zinc-200 active:scale-95 transition-[background-color,transform] duration-200"
+            data-testid="nav-acquire-licence-button"
+          >
+            Acquire Licence
+          </button>
+        </div>
       </div>
     </motion.header>
   );

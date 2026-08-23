@@ -12,6 +12,25 @@ export default function PaymentSuccess() {
   const sessionId = params.get("session_id");
   const [state, setState] = useState({ phase: "polling" });
   const [copied, setCopied] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
+
+  const upgrade = async () => {
+    setUpgrading(true);
+    try {
+      const { data } = await axios.post(`${API}/upgrades`, { session_id: sessionId });
+      if (data.status === "upgraded") {
+        toast.success("UPGRADED TO INSTITUTIONAL — NEW KEY ISSUED");
+        const order = await axios.get(`${API}/orders/${sessionId}`);
+        setState({ phase: "paid", order: order.data });
+      } else {
+        toast.info("PRORATION INVOICE ISSUED — KEY UPGRADES AFTER PAYMENT");
+      }
+    } catch (e) {
+      const d = e.response?.data?.detail;
+      toast.error(typeof d === "string" ? d : "UPGRADE FAILED");
+    }
+    setUpgrading(false);
+  };
 
   useEffect(() => {
     if (!sessionId) {
@@ -131,6 +150,17 @@ export default function PaymentSuccess() {
                 </div>
               ))}
             </div>
+
+            {order.tier === "Professional" && (
+              <button
+                onClick={upgrade}
+                disabled={upgrading}
+                className="mt-6 border border-[#FF3333]/60 text-[#FF3333] text-xs font-bold uppercase tracking-wider px-8 py-4 hover:bg-[#FF3333]/10 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
+                data-testid="upgrade-to-institutional-button"
+              >
+                {upgrading ? "Upgrading…" : "Upgrade to Institutional — Prorated"}
+              </button>
+            )}
           </div>
         )}
 
