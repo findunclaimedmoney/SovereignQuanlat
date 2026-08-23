@@ -84,7 +84,7 @@ const Chapter = ({ chapter, index }) => (
             key={i}
             className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-zinc-500"
           >
-            <span className="h-px w-8 bg-[#FF3333]" />
+            <span className="h-px w-8 bg-[#3B82F6]" />
             {b}
           </li>
         ))}
@@ -102,7 +102,7 @@ export const Manifesto = () => (
       transition={{ duration: 0.9, ease: EASE }}
       className="mb-24 md:mb-32"
     >
-      <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+      <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-6">
         The Manifesto
       </p>
       <h2 className="font-display text-4xl md:text-5xl lg:text-6xl leading-none tracking-tight uppercase font-black max-w-4xl">

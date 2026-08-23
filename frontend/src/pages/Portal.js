@@ -23,62 +23,86 @@ export default function Portal() {
   };
 
   return (
-    <main className="min-h-screen bg-[#050505] px-6 md:px-12 py-24 hero-grid-bg" data-testid="portal-page">
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: [0.76, 0, 0.24, 1] }}
-        className="mx-auto max-w-xl"
+    <main
+      className="min-h-screen bg-[#0B0F14] text-[#E5E7EB] flex flex-col items-center justify-center px-5 py-10"
+      style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
+      data-testid="portal-page"
+    >
+      <motion.header
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="absolute top-7 left-6 md:left-10 flex items-center gap-3"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+        <img src="/sq-logo.png" alt="Sovereign Quant logo" className="h-8 w-8 object-contain" />
+        <span className="font-serif-display text-[22px] text-[#9CA3AF] tracking-wide">
+          Sovereign Quant
+        </span>
+      </motion.header>
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-[420px]"
+      >
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#F59E0B] mb-3.5">
           Buyer Portal
         </p>
-        <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight">
-          Recover your <span className="text-outline">keys.</span>
+        <h1 className="font-serif-display text-[44px] leading-[1.1] text-white mb-7">
+          Recover your keys<em className="text-[#F59E0B] italic">.</em>
         </h1>
-        <p className="mt-6 text-zinc-400 text-sm leading-relaxed">
+        <p className="text-[15px] leading-relaxed text-[#9CA3AF] mb-7">
           Enter the email you used at checkout. Every licence key registered to
           it — plus fresh download links — lands in your inbox within a minute.
         </p>
 
         {!sent ? (
-          <div className="mt-10 space-y-4">
+          <div>
+            <label className="block text-[13px] text-[#9CA3AF] mb-1.5">Purchase email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder="you@yourfund.com"
-              className="w-full bg-black/40 border border-white/15 px-5 py-4 text-sm font-mono outline-none focus:border-[#FF3333]/60 transition-colors duration-200 placeholder:text-zinc-600"
+              placeholder="you@example.com"
+              className="w-full px-3.5 py-[13px] rounded-[10px] border border-white/[0.08] bg-[#151B24] text-[#E5E7EB] text-[15px] outline-none focus:border-[#3B82F6] transition-colors duration-200 placeholder:text-[#6B7280] mb-[18px]"
               data-testid="portal-email-input"
             />
             <button
               onClick={submit}
               disabled={loading}
-              className="w-full bg-white text-black font-bold uppercase tracking-wider px-8 py-4 hover:bg-zinc-200 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
+              className="w-full py-3.5 rounded-[10px] bg-[#3B82F6] text-white font-semibold text-[15px] hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-[opacity,transform] duration-150"
               data-testid="portal-submit-button"
             >
               {loading ? "Transmitting…" : "Email My Licence Keys"}
             </button>
           </div>
         ) : (
-          <div className="mt-10 border border-white/10 bg-[#0A0A0A] p-6" data-testid="portal-confirmation">
-            <p className="text-sm text-zinc-300 leading-relaxed">
-              <span className="text-[#00FF66]">SENT.</span> If a purchase exists
-              for this address, your keys are en route. Check spam if nothing
-              arrives in five minutes.
+          <div
+            className="rounded-[10px] border border-white/[0.08] bg-[#111827] p-5"
+            data-testid="portal-confirmation"
+          >
+            <p className="text-sm text-[#E5E7EB] leading-relaxed">
+              <span className="text-[#10B981] font-semibold">Sent.</span> If a
+              purchase exists for this address, your keys are en route. Check
+              spam if nothing arrives in five minutes.
             </p>
           </div>
         )}
 
-        <Link
-          to="/"
-          className="mt-14 inline-block border border-white/20 text-white text-xs font-bold uppercase tracking-wider px-8 py-4 hover:bg-white/5 active:scale-95 transition-[background-color,transform] duration-200"
-          data-testid="portal-return-home-link"
-        >
-          Return to Sovereign Quant
-        </Link>
+        <p className="mt-[22px] text-xs text-[#9CA3AF] text-center">
+          Keys are only ever sent to the purchase address.
+        </p>
       </motion.div>
+
+      <Link
+        to="/"
+        className="mt-10 text-[13px] text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors duration-200 no-underline"
+        data-testid="portal-return-home-link"
+      >
+        ← Return to Sovereign Quant
+      </Link>
     </main>
   );
 }

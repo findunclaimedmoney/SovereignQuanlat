@@ -27,7 +27,7 @@ export const Nav = () => {
           data-testid="nav-logo"
         >
           <img src="/sq-logo.png" alt="Sovereign Quant logo" className="h-8 w-8 object-contain" />
-          <span>Sovereign<span className="text-[#FF3333]">//</span>Quant</span>
+          <span>Sovereign<span className="text-[#F59E0B]">//</span>Quant</span>
         </button>
 
         <nav className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.2em] text-zinc-400">
@@ -40,21 +40,21 @@ export const Nav = () => {
               <a
                 key={id + i}
                 href={href}
-                className="relative group py-2 hover:text-[#F5F5F0] transition-colors duration-300"
+                className="relative group py-2 hover:text-[#E5E7EB] transition-colors duration-300"
                 data-testid={id}
               >
                 {label}
-                <span className="absolute left-0 bottom-0 h-px w-0 bg-[#FF3333] transition-[width] duration-300 group-hover:w-full" />
+                <span className="absolute left-0 bottom-0 h-px w-0 bg-[#3B82F6] transition-[width] duration-300 group-hover:w-full" />
               </a>
             ) : (
             <button
               key={id + i}
               onClick={() => scrollTo(href)}
-              className="relative group py-2 hover:text-[#F5F5F0] transition-colors duration-300"
+              className="relative group py-2 hover:text-[#E5E7EB] transition-colors duration-300"
               data-testid={id}
             >
               {label}
-              <span className="absolute left-0 bottom-0 h-px w-0 bg-[#FF3333] transition-[width] duration-300 group-hover:w-full" />
+              <span className="absolute left-0 bottom-0 h-px w-0 bg-[#3B82F6] transition-[width] duration-300 group-hover:w-full" />
             </button>
             )
           ))}

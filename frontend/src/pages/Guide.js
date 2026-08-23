@@ -61,7 +61,7 @@ const StepCard = ({ step, index, playingId, setPlayingId }) => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.9, ease: EASE }}
-      className="grid grid-cols-1 lg:grid-cols-12 gap-8 border border-white/10 bg-[#0A0A0A] p-8 md:p-10"
+      className="grid grid-cols-1 lg:grid-cols-12 gap-8 border border-white/10 bg-[#111827] p-8 md:p-10"
       data-testid={`guide-step-${step.id}`}
     >
       <div className="lg:col-span-2">
@@ -77,7 +77,7 @@ const StepCard = ({ step, index, playingId, setPlayingId }) => {
         {step.terminal && (
           <div className="mt-6 border border-white/10 bg-black/60 p-4 text-xs md:text-sm text-zinc-300 space-y-1">
             {step.terminal.map((line, i) => (
-              <p key={i}><span className="text-[#FF3333]">$</span> {line}</p>
+              <p key={i}><span className="text-[#F59E0B]">$</span> {line}</p>
             ))}
           </div>
         )}
@@ -87,7 +87,7 @@ const StepCard = ({ step, index, playingId, setPlayingId }) => {
           onClick={toggle}
           className={`flex items-center gap-3 border px-5 py-4 text-xs font-bold uppercase tracking-wider active:scale-95 transition-[background-color,border-color,transform] duration-200 ${
             playing
-              ? "border-[#FF3333] bg-[#FF3333]/10 text-[#FF3333]"
+              ? "border-[#F59E0B] bg-[#F59E0B]/10 text-[#F59E0B]"
               : "border-white/20 text-white hover:bg-white/5"
           }`}
           data-testid={`guide-narration-button-${step.id}`}
@@ -121,14 +121,14 @@ export default function Guide() {
   const [playingId, setPlayingId] = useState(null);
 
   return (
-    <main className="min-h-screen bg-[#050505] px-6 md:px-12 py-24" data-testid="guide-page">
+    <main className="min-h-screen bg-[#0B0F14] px-6 md:px-12 py-24" data-testid="guide-page">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: EASE }}
         className="mx-auto max-w-5xl"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-6">
           Field Manual
         </p>
         <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight leading-none">
@@ -139,10 +139,10 @@ export default function Guide() {
           walkthrough, watch the full video below, or read at your own pace.
         </p>
 
-        <div className="mt-12 border border-white/10 bg-[#0A0A0A]" data-testid="guide-video-section">
+        <div className="mt-12 border border-white/10 bg-[#111827]" data-testid="guide-video-section">
           <div className="border-b border-white/10 px-5 py-3 text-[10px] uppercase tracking-[0.25em] text-zinc-500 flex justify-between">
             <span>Full Walkthrough // Audio-Visual</span>
-            <span className="text-[#00FF66]">HD Voice</span>
+            <span className="text-[#10B981]">HD Voice</span>
           </div>
           <video
             controls

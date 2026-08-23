@@ -133,11 +133,11 @@ export const Concierge = () => {
         animate={{ scale: 1 }}
         transition={{ delay: 2.2, type: "spring", stiffness: 200, damping: 18 }}
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center border border-white/15 bg-black/60 backdrop-blur-2xl hover:border-[#FF3333]/60 active:scale-95 transition-[border-color,transform] duration-200"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center border border-white/15 bg-black/60 backdrop-blur-2xl hover:border-[#F59E0B]/60 active:scale-95 transition-[border-color,transform] duration-200"
         aria-label="Open AI concierge"
         data-testid="concierge-toggle-button"
       >
-        {open ? <X className="h-5 w-5" /> : <Bot className="h-5 w-5 text-[#FF3333]" />}
+        {open ? <X className="h-5 w-5" /> : <Bot className="h-5 w-5 text-[#F59E0B]" />}
       </motion.button>
 
       <AnimatePresence>
@@ -161,7 +161,7 @@ export const Concierge = () => {
                 <button
                   onClick={() => setShowMemories((s) => !s)}
                   className={`flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] transition-colors duration-200 ${
-                    memories.length ? "text-[#00FF66]" : "text-zinc-600"
+                    memories.length ? "text-[#10B981]" : "text-zinc-600"
                   }`}
                   aria-label="View remembered facts"
                   data-testid="concierge-memory-button"
@@ -170,7 +170,7 @@ export const Concierge = () => {
                 </button>
                 <button
                   onClick={clearChat}
-                  className="text-zinc-600 hover:text-[#FF3333] transition-colors duration-200"
+                  className="text-zinc-600 hover:text-[#F59E0B] transition-colors duration-200"
                   aria-label="Clear chat and memory"
                   data-testid="concierge-clear-button"
                 >
@@ -234,7 +234,7 @@ export const Concierge = () => {
               <button
                 onClick={send}
                 disabled={streaming}
-                className="flex h-9 w-9 items-center justify-center bg-[#FF3333] text-white hover:bg-red-700 active:scale-95 disabled:opacity-40 transition-[background-color,transform,opacity] duration-200"
+                className="flex h-9 w-9 items-center justify-center bg-[#3B82F6] text-white hover:bg-blue-600 active:scale-95 disabled:opacity-40 transition-[background-color,transform,opacity] duration-200"
                 aria-label="Send message"
                 data-testid="concierge-send-button"
               >

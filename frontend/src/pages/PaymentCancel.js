@@ -3,14 +3,14 @@ import { motion } from "framer-motion";
 
 export default function PaymentCancel() {
   return (
-    <main className="min-h-screen bg-[#050505] px-6 md:px-12 py-24 hero-grid-bg" data-testid="payment-cancel-page">
+    <main className="min-h-screen bg-[#0B0F14] px-6 md:px-12 py-24 hero-grid-bg" data-testid="payment-cancel-page">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.76, 0, 0.24, 1] }}
         className="mx-auto max-w-3xl"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-6">
           Fulfilment Terminal
         </p>
         <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight">

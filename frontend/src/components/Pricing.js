@@ -97,7 +97,7 @@ export const Pricing = () => {
         transition={{ duration: 0.9, ease: EASE }}
         className="mb-20"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-6">
           Licence Acquisition
         </p>
         <h2 className="font-display text-4xl md:text-5xl lg:text-6xl leading-none tracking-tight uppercase font-black">
@@ -120,13 +120,13 @@ export const Pricing = () => {
             whileHover={{ y: -8 }}
             className={`relative flex flex-col border p-8 md:p-10 transition-[border-color,box-shadow] duration-300 ${
               tier.dominant
-                ? "bg-[#0d0d0d] border-[#FF3333]/50 shadow-[0_0_60px_-15px_rgba(255,51,51,0.35)]"
-                : "bg-[#111111] border-white/10 hover:border-white/25"
+                ? "bg-[#111827] border-[#F59E0B]/50 shadow-[0_0_60px_-15px_rgba(255,51,51,0.35)]"
+                : "bg-[#151B24] border-white/10 hover:border-white/25"
             }`}
             data-testid={`pricing-card-${tier.id}`}
           >
             {tier.dominant && (
-              <span className="absolute -top-px right-8 bg-[#FF3333] text-white text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1">
+              <span className="absolute -top-px right-8 bg-[#3B82F6] text-white text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1">
                 Most Deployed
               </span>
             )}
@@ -146,18 +146,18 @@ export const Pricing = () => {
             <div className="mt-8 grid grid-cols-2 gap-4 border-y border-white/10 py-6 text-xs uppercase tracking-[0.15em]">
               <div>
                 <p className="text-zinc-500">Max Capital</p>
-                <p className="mt-1 text-[#F5F5F0] tabular">{tier.maxCapital}</p>
+                <p className="mt-1 text-[#E5E7EB] tabular">{tier.maxCapital}</p>
               </div>
               <div>
                 <p className="text-zinc-500">Strategies</p>
-                <p className="mt-1 text-[#F5F5F0] tabular">{tier.strategies}</p>
+                <p className="mt-1 text-[#E5E7EB] tabular">{tier.strategies}</p>
               </div>
             </div>
 
             <ul className="mt-8 space-y-3 text-sm flex-1">
               {tier.features.map((f, j) => (
                 <li key={j} className="flex items-start gap-3 text-zinc-300">
-                  <span className="text-[#00FF66] mt-0.5">+</span> {f}
+                  <span className="text-[#10B981] mt-0.5">+</span> {f}
                 </li>
               ))}
               {tier.locked.map((f, j) => (
@@ -175,7 +175,7 @@ export const Pricing = () => {
                 }}
                 className={`mt-10 w-full font-bold uppercase tracking-wider px-8 py-4 active:scale-95 transition-[background-color,transform,color] duration-200 ${
                   tier.dominant
-                    ? "bg-[#FF3333] text-white hover:bg-red-700"
+                    ? "bg-[#3B82F6] text-white hover:bg-blue-600"
                     : "bg-white text-black hover:bg-zinc-200"
                 }`}
                 data-testid={`buy-${tier.id}-button`}
@@ -211,11 +211,11 @@ export const Pricing = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.9, ease: EASE }}
-        className="mt-6 border border-white/10 bg-[#111111] p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-8 hover:border-[#FF3333]/40 transition-colors duration-300"
+        className="mt-6 border border-white/10 bg-[#151B24] p-8 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-8 hover:border-[#F59E0B]/40 transition-colors duration-300"
         data-testid="pricing-card-coach"
       >
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold">Add-On</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold">Add-On</p>
           <h3 className="font-display text-2xl md:text-3xl font-light uppercase mt-3">
             AI Coach <span className="text-outline">— Atlas</span>
           </h3>
@@ -234,7 +234,7 @@ export const Pricing = () => {
               setSelected({ id: "ai_coach", name: "AI Coach", price: 49, lookupKey: "ai_coach_monthly", interval: "month" });
               setLicensee("");
             }}
-            className="mt-4 border border-[#FF3333]/60 text-[#FF3333] font-bold uppercase tracking-wider px-8 py-4 hover:bg-[#FF3333]/10 active:scale-95 transition-[background-color,transform] duration-200"
+            className="mt-4 border border-[#F59E0B]/60 text-[#F59E0B] font-bold uppercase tracking-wider px-8 py-4 hover:bg-[#F59E0B]/10 active:scale-95 transition-[background-color,transform] duration-200"
             data-testid="buy-coach-button"
           >
             Add AI Coach
@@ -244,7 +244,7 @@ export const Pricing = () => {
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent
-          className="bg-[#0A0A0A] border border-white/10 rounded-none text-[#F5F5F0] sm:max-w-md"
+          className="bg-[#111827] border border-white/10 rounded-none text-[#E5E7EB] sm:max-w-md"
           data-testid="checkout-dialog"
         >
           <DialogHeader>
@@ -268,14 +268,14 @@ export const Pricing = () => {
               data-testid="licensee-name-input"
             />
             {typeof window !== "undefined" && localStorage.getItem("sq_ref") && (
-              <p className="text-[10px] uppercase tracking-[0.2em] text-[#00FF66]" data-testid="referral-applied-note">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#10B981]" data-testid="referral-applied-note">
                 Referral {localStorage.getItem("sq_ref")} applied — your referrer earns 2.5%
               </p>
             )}
             <button
               onClick={startCheckout}
               disabled={loading}
-              className="w-full bg-[#FF3333] text-white font-bold uppercase tracking-wider px-8 py-4 hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
+              className="w-full bg-[#3B82F6] text-white font-bold uppercase tracking-wider px-8 py-4 hover:bg-blue-600 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
               data-testid="checkout-submit-button"
             >
               {loading ? "Routing to Secure Checkout…" : `Proceed — $${selected?.price.toLocaleString()}/${selected?.interval === "month" ? "mo" : "yr"}`}

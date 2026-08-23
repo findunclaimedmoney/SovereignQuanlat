@@ -72,7 +72,7 @@ export const Armory = () => {
         transition={{ duration: 0.9, ease: EASE }}
         className="mb-16"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-6">
           The Armory
         </p>
         <h2 className="font-display text-4xl md:text-5xl lg:text-6xl leading-none tracking-tight uppercase font-black">
@@ -93,10 +93,10 @@ export const Armory = () => {
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.9, delay: i * 0.12, ease: EASE }}
             whileHover={{ y: -8 }}
-            className="flex flex-col border border-white/10 bg-[#111111] p-8 hover:border-white/25 transition-[border-color,transform] duration-300"
+            className="flex flex-col border border-white/10 bg-[#151B24] p-8 hover:border-white/25 transition-[border-color,transform] duration-300"
             data-testid={`pack-card-${pack.lookupKey}`}
           >
-            <p className="text-[10px] uppercase tracking-[0.25em] text-[#FF3333]">{pack.tag}</p>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[#F59E0B]">{pack.tag}</p>
             <h3 className="font-display text-xl md:text-2xl font-light uppercase mt-3">{pack.name}</h3>
             <p className="font-display text-3xl font-black tabular mt-6">
               ${pack.price}
@@ -105,7 +105,7 @@ export const Armory = () => {
             <ul className="mt-6 space-y-3 text-sm flex-1">
               {pack.features.map((f, j) => (
                 <li key={j} className="flex items-start gap-3 text-zinc-300">
-                  <span className="text-[#00FF66] mt-0.5">+</span> {f}
+                  <span className="text-[#10B981] mt-0.5">+</span> {f}
                 </li>
               ))}
             </ul>
@@ -124,7 +124,7 @@ export const Armory = () => {
       </div>
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="bg-[#0A0A0A] border border-white/10 rounded-none text-[#F5F5F0] sm:max-w-md" data-testid="pack-checkout-dialog">
+        <DialogContent className="bg-[#111827] border border-white/10 rounded-none text-[#E5E7EB] sm:max-w-md" data-testid="pack-checkout-dialog">
           <DialogHeader>
             <DialogTitle className="font-display uppercase tracking-tight text-xl">
               {selected?.name}
@@ -145,7 +145,7 @@ export const Armory = () => {
             <button
               onClick={startCheckout}
               disabled={loading}
-              className="w-full bg-[#FF3333] text-white font-bold uppercase tracking-wider px-8 py-4 hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
+              className="w-full bg-[#3B82F6] text-white font-bold uppercase tracking-wider px-8 py-4 hover:bg-blue-600 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
               data-testid="pack-checkout-submit-button"
             >
               {loading ? "Routing to Secure Checkout…" : `Proceed — $${selected?.price} one-time`}

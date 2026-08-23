@@ -18,7 +18,7 @@ export const EditorialMarquee = () => (
           key={i}
           className="mx-16 text-sm tracking-[0.2em] uppercase text-zinc-500 whitespace-nowrap"
         >
-          {item} <span className="text-[#FF3333] ml-16">/</span>
+          {item} <span className="text-[#F59E0B] ml-16">/</span>
         </span>
       ))}
     </Marquee>

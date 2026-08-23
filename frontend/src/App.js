@@ -32,7 +32,7 @@ function App() {
   }, []);
 
   return (
-    <div className="App bg-[#050505] text-[#F5F5F0]">
+    <div className="App bg-[#0B0F14] text-[#E5E7EB]">
       <AuthProvider>
         <BrowserRouter>
           <Routes>

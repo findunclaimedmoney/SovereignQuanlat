@@ -33,7 +33,7 @@ export default function Dashboard() {
 
   if (!user || !data) {
     return (
-      <main className="min-h-screen bg-[#050505] flex items-center justify-center" data-testid="dashboard-loading">
+      <main className="min-h-screen bg-[#0B0F14] flex items-center justify-center" data-testid="dashboard-loading">
         <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 animate-pulse">Loading terminal…</p>
       </main>
     );
@@ -42,7 +42,7 @@ export default function Dashboard() {
   const referralLink = `${window.location.origin}/?ref=${data.referral.code}`;
 
   return (
-    <main className="min-h-screen bg-[#050505] px-6 md:px-12 py-24" data-testid="dashboard-page">
+    <main className="min-h-screen bg-[#0B0F14] px-6 md:px-12 py-24" data-testid="dashboard-page">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -51,7 +51,7 @@ export default function Dashboard() {
       >
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-4">
               Licensee Terminal
             </p>
             <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight">
@@ -71,17 +71,17 @@ export default function Dashboard() {
         <section className="mt-14" data-testid="dashboard-licences-section">
           <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">Your Licences</h2>
           {data.licences.length === 0 ? (
-            <div className="border border-white/10 bg-[#0A0A0A] p-6 text-sm text-zinc-400">
+            <div className="border border-white/10 bg-[#111827] p-6 text-sm text-zinc-400">
               No paid licences tied to this email yet.{" "}
-              <Link to="/" className="text-[#FF3333]">Acquire one</Link> with this email at checkout.
+              <Link to="/" className="text-[#F59E0B]">Acquire one</Link> with this email at checkout.
             </div>
           ) : (
             <div className="space-y-4">
               {data.licences.map((lic, i) => (
-                <div key={lic.session_id} className="border border-white/10 bg-[#0A0A0A] p-5" data-testid={`licence-card-${i}`}>
+                <div key={lic.session_id} className="rounded-[10px] border border-white/10 bg-[#111827] p-5" data-testid={`licence-card-${i}`}>
                   <div className="flex justify-between items-center flex-wrap gap-2">
                     <span className="font-display uppercase text-lg">{lic.tier}</span>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#00FF66]">Active</span>
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#10B981]">Active</span>
                   </div>
                   <code className="block mt-3 break-all text-xs text-zinc-400 leading-relaxed">{lic.licence_key}</code>
                   <div className="mt-4 flex gap-3 flex-wrap">
@@ -94,7 +94,7 @@ export default function Dashboard() {
                     </button>
                     <a
                       href={`${API}/download/${lic.session_id}`}
-                      className="flex items-center gap-2 bg-[#FF3333] text-white text-[10px] font-bold uppercase tracking-wider px-4 py-2 hover:bg-red-700 active:scale-95 transition-[background-color,transform] duration-200"
+                      className="flex items-center gap-2 bg-[#3B82F6] text-white text-[10px] font-bold uppercase tracking-wider px-4 py-2 hover:bg-blue-600 active:scale-95 transition-[background-color,transform] duration-200"
                       data-testid={`licence-download-button-${i}`}
                     >
                       Download Workstation
@@ -111,11 +111,11 @@ export default function Dashboard() {
             <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">Strategy Packs</h2>
             <div className="space-y-3">
               {data.packs.map((p, i) => (
-                <div key={p.session_id} className="flex items-center justify-between border border-white/10 bg-[#0A0A0A] px-5 py-4" data-testid={`pack-row-${i}`}>
-                  <span className="text-sm text-[#F5F5F0]">{p.name}</span>
+                <div key={p.session_id} className="flex items-center justify-between border border-white/10 bg-[#111827] px-5 py-4" data-testid={`pack-row-${i}`}>
+                  <span className="text-sm text-[#E5E7EB]">{p.name}</span>
                   <a
                     href={`${API}/download/pack/${p.session_id}`}
-                    className="text-[10px] font-bold uppercase tracking-wider text-[#FF3333] hover:text-red-400 transition-colors duration-200"
+                    className="text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] hover:text-amber-400 transition-colors duration-200"
                     data-testid={`pack-download-button-${i}`}
                   >
                     Download Zip
@@ -129,7 +129,7 @@ export default function Dashboard() {
         <section className="mt-14" data-testid="dashboard-orders-section">
           <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">Order History</h2>
           {data.orders.length === 0 ? (
-            <p className="border border-white/10 bg-[#0A0A0A] p-6 text-sm text-zinc-500">No orders on this email yet.</p>
+            <p className="border border-white/10 bg-[#111827] p-6 text-sm text-zinc-500">No orders on this email yet.</p>
           ) : (
             <div className="border border-white/10">
               <div className="grid grid-cols-12 gap-2 border-b border-white/10 px-4 py-3 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
@@ -140,12 +140,12 @@ export default function Dashboard() {
               </div>
               {data.orders.map((o, i) => (
                 <div key={o.session_id} className="grid grid-cols-12 gap-2 px-4 py-4 text-xs border-b border-white/5" data-testid={`order-row-${i}`}>
-                  <span className="col-span-3 text-[#F5F5F0]">{o.tier || "—"}</span>
+                  <span className="col-span-3 text-[#E5E7EB]">{o.tier || "—"}</span>
                   <span className="col-span-3 tabular text-zinc-300">
                     {o.amount != null ? `$${o.amount.toLocaleString()} ${String(o.currency || "").toUpperCase()}` : "—"}
                   </span>
                   <span className={`col-span-3 uppercase tracking-wider ${
-                    o.payment_status === "paid" ? "text-[#00FF66]" : o.payment_status === "refunded" ? "text-[#FF3333]" : "text-zinc-500"
+                    o.payment_status === "paid" ? "text-[#10B981]" : o.payment_status === "refunded" ? "text-[#F59E0B]" : "text-zinc-500"
                   }`}>
                     {o.payment_status}{o.revoked ? " / revoked" : ""}{o.has_key ? " / key active" : ""}
                   </span>
@@ -162,10 +162,10 @@ export default function Dashboard() {
           <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">
             Referral Program — 2.5% Rebate
           </h2>
-          <div className="border border-[#FF3333]/40 bg-[#0A0A0A] p-6">
+          <div className="rounded-[10px] border border-[#F59E0B]/40 bg-[#111827] p-6">
             <p className="text-sm text-zinc-400 leading-relaxed">
               Share your link. Every month, you earn{" "}
-              <span className="text-[#F5F5F0]">2.5% of everything your referrals spend</span>{" "}
+              <span className="text-[#E5E7EB]">2.5% of everything your referrals spend</span>{" "}
               with Sovereign Quant. Rebates are credited monthly and paid out by our desk.
             </p>
             <div className="mt-5 flex gap-3 flex-wrap">
@@ -187,9 +187,9 @@ export default function Dashboard() {
                 ["Spend This Month", `$${data.referral.month_spend.toLocaleString()}`],
                 ["Rebate This Month", `$${data.referral.month_rebate.toFixed(2)}`],
               ].map(([k, v]) => (
-                <div key={k} className="bg-[#0A0A0A] p-4">
+                <div key={k} className="bg-[#111827] p-4">
                   <p className="text-zinc-600">{k}</p>
-                  <p className="mt-1 text-[#F5F5F0] tabular">{v}</p>
+                  <p className="mt-1 text-[#E5E7EB] tabular">{v}</p>
                 </div>
               ))}
             </div>
@@ -197,7 +197,7 @@ export default function Dashboard() {
               Lifetime referred spend: ${data.referral.lifetime_spend.toLocaleString()} // Lifetime rebate: ${data.referral.lifetime_rebate.toFixed(2)}
             </p>
             {data.referral.paid_months?.includes(data.referral.month) && (
-              <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-[#00FF66]" data-testid="rebate-paid-tag">
+              <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-[#10B981]" data-testid="rebate-paid-tag">
                 This month's rebate has been marked as paid
               </p>
             )}

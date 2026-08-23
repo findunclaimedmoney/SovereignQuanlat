@@ -87,10 +87,10 @@ export const CoachChat = () => {
 
   if (!active) {
     return (
-      <div className="border border-white/10 bg-[#0A0A0A] p-6" data-testid="coach-upsell">
+      <div className="border border-white/10 bg-[#111827] p-6" data-testid="coach-upsell">
         <p className="text-sm text-zinc-400 leading-relaxed">
           AI Coach is not active on this account.{" "}
-          <Link to="/#pricing" className="text-[#FF3333]">Add it for $49/mo</Link>{" "}
+          <Link to="/#pricing" className="text-[#F59E0B]">Add it for $49/mo</Link>{" "}
           — Claude-Opus mentorship on strategies, risk gates and workstation
           operations. Software education, never investment advice.
         </p>
@@ -99,11 +99,11 @@ export const CoachChat = () => {
   }
 
   return (
-    <div className="border border-[#FF3333]/40 bg-[#0A0A0A]" data-testid="coach-chat-panel">
+    <div className="rounded-[10px] border border-[#F59E0B]/40 bg-[#111827]" data-testid="coach-chat-panel">
       <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
         <p className="text-[10px] uppercase tracking-[0.25em] text-zinc-500">Atlas // AI Coach</p>
-        <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#00FF66]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#00FF66] animate-pulse" />
+        <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#10B981]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
           Active
         </span>
       </div>
@@ -134,7 +134,7 @@ export const CoachChat = () => {
         <button
           onClick={send}
           disabled={streaming}
-          className="flex h-9 w-9 items-center justify-center bg-[#FF3333] text-white hover:bg-red-700 active:scale-95 disabled:opacity-40 transition-[background-color,transform,opacity] duration-200"
+          className="flex h-9 w-9 items-center justify-center bg-[#3B82F6] text-white hover:bg-blue-600 active:scale-95 disabled:opacity-40 transition-[background-color,transform,opacity] duration-200"
           aria-label="Send coach message"
           data-testid="coach-send-button"
         >

@@ -29,7 +29,7 @@ export const PlainTalk = () => (
       transition={{ duration: 0.9, ease: EASE }}
       className="mb-16"
     >
-      <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+      <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-6">
         No Jargon
       </p>
       <h2 className="font-display text-4xl md:text-5xl lg:text-6xl leading-none tracking-tight uppercase font-black">
@@ -45,7 +45,7 @@ export const PlainTalk = () => (
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.9, delay: i * 0.12, ease: EASE }}
-          className="border border-white/10 bg-[#111111] p-8 md:p-10 hover:border-white/25 transition-colors duration-300"
+          className="border border-white/10 bg-[#151B24] p-8 md:p-10 hover:border-white/25 transition-colors duration-300"
           data-testid={`plain-talk-${block.number}`}
         >
           <span className="font-display text-5xl font-black text-outline leading-none">

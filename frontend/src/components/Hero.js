@@ -58,7 +58,7 @@ function PointSphere() {
       </points>
       <mesh ref={cage}>
         <icosahedronGeometry args={[3.1, 1]} />
-        <meshBasicMaterial color="#FF3333" wireframe transparent opacity={0.08} />
+        <meshBasicMaterial color="#F59E0B" wireframe transparent opacity={0.08} />
       </mesh>
     </group>
   );
@@ -82,7 +82,7 @@ export const Hero = () => {
           <PointSphere />
         </Canvas>
       </div>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,#050505_90%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,#0B0F14_90%)]" />
 
       <motion.div
         style={{ y, opacity }}
@@ -92,7 +92,7 @@ export const Hero = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.4 }}
-          className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-8"
+          className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-8"
           data-testid="hero-overline"
         >
           Multi-Agent Quantitative Workstation — v1.3 Core
@@ -140,7 +140,7 @@ export const Hero = () => {
                 ? window.__lenis.scrollTo("#pricing", { offset: -72 })
                 : document.querySelector("#pricing")?.scrollIntoView({ behavior: "smooth" })
             }
-            className="border border-[#FF3333]/60 text-[#FF3333] font-bold uppercase tracking-wider px-8 py-4 hover:bg-[#FF3333]/10 active:scale-95 transition-[background-color,transform] duration-200"
+            className="border border-[#F59E0B]/60 text-[#F59E0B] font-bold uppercase tracking-wider px-8 py-4 hover:bg-[#F59E0B]/10 active:scale-95 transition-[background-color,transform] duration-200"
             data-testid="hero-acquire-button"
           >
             Acquire Licence
@@ -167,7 +167,7 @@ export const Hero = () => {
         data-testid="hero-status-bar"
       >
         <span>
-          SYS <span className="text-[#00FF66]">ACTIVE</span>
+          SYS <span className="text-[#10B981]">ACTIVE</span>
         </span>
         <span className="hidden md:inline">HMAC-SHA256 // Offline Licensing</span>
         <span className="tabular">LAT 40.7128 — LON 74.0060</span>

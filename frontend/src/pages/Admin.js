@@ -108,14 +108,14 @@ export default function Admin() {
   };
 
   return (
-    <main className="min-h-screen bg-[#050505] px-6 md:px-12 py-24" data-testid="admin-page">
+    <main className="min-h-screen bg-[#0B0F14] px-6 md:px-12 py-24" data-testid="admin-page">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.76, 0, 0.24, 1] }}
         className="mx-auto max-w-5xl"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-6">
           Sovereign Quant // Internal
         </p>
         <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight">
@@ -129,7 +129,7 @@ export default function Admin() {
             onChange={(e) => setKey(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && load()}
             placeholder="Admin key"
-            className="flex-1 bg-black/40 border border-white/15 px-5 py-4 text-sm font-mono outline-none focus:border-[#FF3333]/60 transition-colors duration-200 placeholder:text-zinc-600"
+            className="flex-1 bg-black/40 border border-white/15 px-5 py-4 text-sm font-mono outline-none focus:border-[#F59E0B]/60 transition-colors duration-200 placeholder:text-zinc-600"
             data-testid="admin-key-input"
           />
           <button
@@ -161,7 +161,7 @@ export default function Admin() {
                 data-testid={`admin-order-row-${i}`}
               >
                 <div className="col-span-3">
-                  <p className="text-[#F5F5F0] truncate">{o.licensee_name || "—"}</p>
+                  <p className="text-[#E5E7EB] truncate">{o.licensee_name || "—"}</p>
                   <p className="text-zinc-600 truncate">{o.licence_email_to || "no email"}</p>
                 </div>
                 <span className="col-span-2 text-zinc-300">{o.tier || o.lookup_key || "—"}</span>
@@ -171,9 +171,9 @@ export default function Admin() {
                 <span
                   className={`col-span-2 uppercase tracking-wider ${
                     o.payment_status === "paid"
-                      ? "text-[#00FF66]"
+                      ? "text-[#10B981]"
                       : o.payment_status === "refunded"
-                        ? "text-[#FF3333]"
+                        ? "text-[#F59E0B]"
                         : "text-zinc-500"
                   }`}
                 >
@@ -184,7 +184,7 @@ export default function Admin() {
                   {o.payment_status === "paid" && (
                     <button
                       onClick={() => refund(o.session_id)}
-                      className="bg-[#FF3333] text-white text-[10px] font-bold uppercase tracking-wider px-4 py-2 hover:bg-red-700 active:scale-95 transition-[background-color,transform] duration-200"
+                      className="bg-[#3B82F6] text-white text-[10px] font-bold uppercase tracking-wider px-4 py-2 hover:bg-blue-600 active:scale-95 transition-[background-color,transform] duration-200"
                       data-testid={`refund-button-${i}`}
                     >
                       Refund + Revoke
@@ -203,21 +203,21 @@ export default function Admin() {
                 Referral Rebates — 2.5% Monthly
               </h2>
               {rebates.length === 0 ? (
-                <p className="border border-white/10 bg-[#0A0A0A] p-6 text-sm text-zinc-500">No referred sales yet.</p>
+                <p className="border border-white/10 bg-[#111827] p-6 text-sm text-zinc-500">No referred sales yet.</p>
               ) : (
                 <div className="space-y-3">
                   {rebates.map((r, i) => (
-                    <div key={r.code} className="flex items-center justify-between border border-white/10 bg-[#0A0A0A] px-5 py-4 text-xs" data-testid={`rebate-row-${i}`}>
+                    <div key={r.code} className="flex items-center justify-between border border-white/10 bg-[#111827] px-5 py-4 text-xs" data-testid={`rebate-row-${i}`}>
                       <div>
-                        <p className="text-[#F5F5F0] font-bold">{r.code}</p>
+                        <p className="text-[#E5E7EB] font-bold">{r.code}</p>
                         <p className="text-zinc-500 mt-1">
                           {r.referred_count} sales // ${r.month_spend.toLocaleString()} this month // ${r.lifetime_spend.toLocaleString()} lifetime
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="tabular text-[#F5F5F0]">${r.month_rebate.toFixed(2)} / {r.month}</p>
+                        <p className="tabular text-[#E5E7EB]">${r.month_rebate.toFixed(2)} / {r.month}</p>
                         {r.month_paid ? (
-                          <p className="text-[#00FF66] uppercase tracking-wider mt-1">Paid</p>
+                          <p className="text-[#10B981] uppercase tracking-wider mt-1">Paid</p>
                         ) : (
                           <button
                             onClick={() => payRebate(r)}
@@ -238,12 +238,12 @@ export default function Admin() {
               <h2 className="text-xs uppercase tracking-[0.25em] text-zinc-500 mb-4">
                 Site Foundry — Sovereign Ecosystem Generator
               </h2>
-              <div className="border border-white/10 bg-[#0A0A0A] p-6 space-y-4">
+              <div className="border border-white/10 bg-[#111827] p-6 space-y-4">
                 <input
                   value={siteName}
                   onChange={(e) => setSiteName(e.target.value)}
                   placeholder="Project name — e.g. Licence Docs Portal"
-                  className="w-full bg-black/40 border border-white/15 px-5 py-3 text-sm font-mono outline-none focus:border-[#FF3333]/60 transition-colors duration-200 placeholder:text-zinc-600"
+                  className="w-full bg-black/40 border border-white/15 px-5 py-3 text-sm font-mono outline-none focus:border-[#F59E0B]/60 transition-colors duration-200 placeholder:text-zinc-600"
                   data-testid="foundry-name-input"
                 />
                 <textarea
@@ -251,13 +251,13 @@ export default function Admin() {
                   onChange={(e) => setSiteInstructions(e.target.value)}
                   placeholder="Instructions — what to build, sections, content, tone…"
                   rows={4}
-                  className="w-full bg-black/40 border border-white/15 px-5 py-3 text-sm font-mono outline-none focus:border-[#FF3333]/60 transition-colors duration-200 placeholder:text-zinc-600"
+                  className="w-full bg-black/40 border border-white/15 px-5 py-3 text-sm font-mono outline-none focus:border-[#F59E0B]/60 transition-colors duration-200 placeholder:text-zinc-600"
                   data-testid="foundry-instructions-input"
                 />
                 <button
                   onClick={generateSite}
                   disabled={generating}
-                  className="bg-[#FF3333] text-white text-xs font-bold uppercase tracking-wider px-8 py-4 hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
+                  className="bg-[#3B82F6] text-white text-xs font-bold uppercase tracking-wider px-8 py-4 hover:bg-blue-600 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
                   data-testid="foundry-generate-button"
                 >
                   {generating ? "Forging… (up to ~2 min)" : "Generate Site"}
@@ -268,14 +268,14 @@ export default function Admin() {
                       <div key={s.site_id} className="flex items-center justify-between text-xs" data-testid={`foundry-site-row-${i}`}>
                         <span className="text-zinc-300">
                           {s.name}{" "}
-                          <span className={s.status === "ready" ? "text-zinc-600" : "text-[#FF3333] animate-pulse"}>
+                          <span className={s.status === "ready" ? "text-zinc-600" : "text-[#F59E0B] animate-pulse"}>
                             {s.status === "ready" ? `(${s.file_count} files)` : s.status === "failed" ? "(failed)" : "(forging…)"}
                           </span>
                         </span>
                         {s.status === "ready" && (
                           <button
                             onClick={() => downloadSite(s.site_id)}
-                            className="text-[#FF3333] uppercase tracking-wider hover:text-red-400 transition-colors duration-200"
+                            className="text-[#F59E0B] uppercase tracking-wider hover:text-amber-400 transition-colors duration-200"
                             data-testid={`foundry-download-button-${i}`}
                           >
                             Download Zip

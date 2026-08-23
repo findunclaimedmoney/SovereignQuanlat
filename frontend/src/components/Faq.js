@@ -43,7 +43,7 @@ export const Faq = () => {
         transition={{ duration: 0.9, ease: EASE }}
         className="mb-16"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-[#F59E0B] font-bold mb-6">
           Objections, Answered
         </p>
         <h2 className="font-display text-4xl md:text-5xl lg:text-6xl leading-none tracking-tight uppercase font-black">
@@ -67,11 +67,11 @@ export const Faq = () => {
               className="w-full flex items-center justify-between py-6 text-left group"
               data-testid={`faq-toggle-${i}`}
             >
-              <span className="text-base md:text-lg font-medium text-[#F5F5F0] group-hover:text-[#FF3333] transition-colors duration-200">
+              <span className="text-base md:text-lg font-medium text-[#E5E7EB] group-hover:text-[#F59E0B] transition-colors duration-200">
                 {item.q}
               </span>
               {open === i ? (
-                <Minus className="h-4 w-4 text-[#FF3333] shrink-0" />
+                <Minus className="h-4 w-4 text-[#F59E0B] shrink-0" />
               ) : (
                 <Plus className="h-4 w-4 text-zinc-500 shrink-0" />
               )}

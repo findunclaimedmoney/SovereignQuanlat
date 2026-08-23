@@ -18,13 +18,13 @@
         --secondary-foreground: 60 9% 95%;
         --muted: 0 0% 10%;
         --muted-foreground: 240 4% 55%;
-        --accent: 0 100% 60%;
+        --accent: 38 92% 50%;
         --accent-foreground: 0 0% 100%;
         --destructive: 0 100% 60%;
         --destructive-foreground: 0 0% 100%;
         --border: 0 0% 14%;
         --input: 0 0% 16%;
-        --ring: 0 100% 60%;
+        --ring: 38 92% 50%;
         --radius: 0rem;
     }
 }
@@ -34,35 +34,35 @@
         @apply border-border;
     }
     html {
-        background-color: #050505;
+        background-color: #0B0F14;
     }
     body {
         @apply bg-background text-foreground;
-        font-family: 'JetBrains Mono', monospace;
+        font-family: 'DM Sans', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
     ::selection {
-        background-color: #FF3333;
-        color: #050505;
+        background-color: #F59E0B;
+        color: #0B0F14;
     }
     ::-webkit-scrollbar {
         width: 8px;
     }
     ::-webkit-scrollbar-track {
-        background: #050505;
+        background: #0B0F14;
     }
     ::-webkit-scrollbar-thumb {
         background: #26262b;
     }
     ::-webkit-scrollbar-thumb:hover {
-        background: #FF3333;
+        background: #F59E0B;
     }
 }
 
 @layer utilities {
     .font-display {
-        font-family: 'Unbounded', sans-serif;
+        font-family: 'Instrument Serif', Georgia, serif;
     }
     .font-serif-display {
         font-family: 'Instrument Serif', Georgia, serif;

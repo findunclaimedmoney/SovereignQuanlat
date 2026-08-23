@@ -84,5 +84,8 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 - P1: Customer portal to re-view licence keys by email; refund handling UI.
 - P2: Community download counter/analytics; upgrade path Community→Professional inside app.
 
+## Implemented (2026-08-23, round 11)
+- Deployment health check PASSED (no hardcoded secrets/URLs, correct ports, CORS ok, supervisor valid, frontend+backend live-smoke-tested 200). User chose to keep current LICENCE_HMAC_SECRET for now (rotation still on backlog). Awaiting user-triggered production redeploy from Emergent dashboard so quant-checkout.emergent.host picks up the navy/gold restyle, logo, and console bugfix.
+
 ## Next Tasks
-1. User decides sandbox-claim vs own Stripe key. 2. Post-purchase download delivery. 3. Renewal reminders. 4. Deploy + Stripe KYC.
+1. USER ACTION: redeploy to production from Emergent dashboard. 2. Rotate LICENCE_HMAC_SECRET before real sales (user deferred). 3. Upload logo in Stripe Dashboard → Settings → Branding (file at /app/sq-logo-stripe.png). 4. Stripe KYC.
