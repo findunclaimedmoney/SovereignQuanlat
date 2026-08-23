@@ -2,6 +2,7 @@ import { Nav } from "@/components/Nav";
 import { Hero } from "@/components/Hero";
 import { EditorialMarquee } from "@/components/EditorialMarquee";
 import { Manifesto } from "@/components/Manifesto";
+import { PlainTalk } from "@/components/PlainTalk";
 import { Armory } from "@/components/Armory";
 import { Pricing } from "@/components/Pricing";
 import { Footer } from "@/components/Footer";
@@ -23,6 +24,7 @@ export default function Landing() {
       <Hero />
       <EditorialMarquee />
       <Manifesto />
+      <PlainTalk />
       <Armory />
       <Pricing />
       <Footer />

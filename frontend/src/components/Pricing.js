@@ -199,6 +199,13 @@ export const Pricing = () => {
         ))}
       </div>
 
+      <p className="mt-6 text-[10px] uppercase tracking-[0.15em] text-zinc-600 leading-relaxed max-w-3xl" data-testid="pricing-plain-terms">
+        In plain terms — Max Capital: the largest account size the safety engine
+        will manage for you, a hard technical ceiling set by your tier.
+        Strategies: how many can run at the same time. Nothing here trades real
+        money by itself.
+      </p>
+
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}

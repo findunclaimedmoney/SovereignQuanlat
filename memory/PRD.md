@@ -63,6 +63,10 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 - Strategy Pack Store ("Armory" section): three one-time drop-in modules with REAL working code — Volatility Harvester $149, Mean Reversion Pro $149, Execution Suite $249 (live Stripe products, one-time payment mode). Instant zip download on success page + email link + dashboard listing; downloads gated to paid orders. Pack/coach orders excluded from licence renewal reminders; licences list no longer mixes pack/coach records.
 - PaymentSuccess now renders three order kinds correctly (licence key / pack download / coach activation).
 
+## Implemented (2026-08-23, round 7)
+- Console bugfix: malformed PostHog inline script in public/index.html (missing closing paren, "Unexpected token ':'" on every page) — fixed; verified clean console on home/guide/login. NOTE: required frontend supervisor restart to serve updated public/index.html. Three.js deprecation warning is from platform script (emergent-main.js), not our code.
+- Plain-English layer per external review: "Plain Talk" section (what it is / what it is not / who it is for + prominent no-track-record disclosure), plain-terms definitions under pricing grid (Max Capital, Strategies, "nothing here trades real money by itself"), concierge knowledge entry for non-technical visitors.
+
 ## Backlog
 - P0: Rotate LICENCE_HMAC_SECRET to user's own secret before real sales; user to claim Stripe sandbox (onboarding link shared) or provide own key (BYOK switch).
 - P1: Customer portal to re-view licence keys by email; refund handling UI.

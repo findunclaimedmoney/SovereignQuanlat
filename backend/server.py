@@ -718,10 +718,19 @@ PACK_KNOWLEDGE = {
 }
 
 
+PLAIN_ENGLISH_KNOWLEDGE = {
+    "title": "Plain-English Positioning",
+    "text": "When a visitor seems non-technical, explain simply: Sovereign Quant is a strategy-testing workstation with built-in safety limits that runs on their own computer. It never holds money, never places trades by itself, and promises no returns. Max Capital means the largest account size the safety engine will manage. Free Community tier to try, narrated guide to learn, AI Coach for plain-English teaching.",
+}
+
+
 @app.on_event("startup")
 async def seed_pack_knowledge():
     await db.concierge_knowledge.update_one(
         {"title": PACK_KNOWLEDGE["title"]}, {"$set": PACK_KNOWLEDGE}, upsert=True
+    )
+    await db.concierge_knowledge.update_one(
+        {"title": PLAIN_ENGLISH_KNOWLEDGE["title"]}, {"$set": PLAIN_ENGLISH_KNOWLEDGE}, upsert=True
     )
 
 
