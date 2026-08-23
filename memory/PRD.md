@@ -76,6 +76,9 @@ Product context: user uploaded the actual software (Streamlit-based "Sovereign Q
 ## Implemented (2026-08-23, round 9)
 - Nav overlap hardening (user-reported on production, transient mid-load): nav now has permanent dark backdrop (not scroll-gated) and hero content has a guaranteed 72px safe zone below the nav; official hexagon logo (user-supplied) added to nav, favicon, apple-touch-icon, og:image. Stripe-side logo upload NOT possible via API (own-account restriction) — file ready at /app/sq-logo-stripe.png, user uploads in Dashboard → Settings → Branding.
 
+## Implemented (2026-08-23, round 10)
+- Login page restyled per user's Claude-designed HTML: DM Sans + Instrument Serif, gold eyebrow/italic-period headings, blue (#3B82F6) tabs/submit, rounded inputs on #0B0F14, serif brand + hexagon logo, "Software licensing only" fineprint. Auth logic/testids unchanged; register-through-page verified. NOTE: palette (blue/gold) intentionally departs from site-wide red/black brutalism — user's explicit choice.
+
 ## Backlog
 - P0: Rotate LICENCE_HMAC_SECRET to user's own secret before real sales; user to claim Stripe sandbox (onboarding link shared) or provide own key (BYOK switch).
 - P1: Customer portal to re-view licence keys by email; refund handling UI.

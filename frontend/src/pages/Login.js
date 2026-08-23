@@ -38,85 +38,121 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen bg-[#050505] px-6 md:px-12 py-24 hero-grid-bg" data-testid="login-page">
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: [0.76, 0, 0.24, 1] }}
-        className="mx-auto max-w-md"
+    <main
+      className="min-h-screen bg-[#0B0F14] text-[#E5E7EB] flex flex-col items-center justify-center px-5 py-10"
+      style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
+      data-testid="login-page"
+    >
+      <motion.header
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="absolute top-7 left-6 md:left-10 flex items-center gap-3"
+        data-testid="login-brand"
       >
-        <p className="text-xs uppercase tracking-[0.3em] text-[#FF3333] font-bold mb-6">
+        <img src="/sq-logo.png" alt="Sovereign Quant logo" className="h-8 w-8 object-contain" />
+        <span className="font-serif-display text-[22px] text-[#9CA3AF] tracking-wide">
+          Sovereign Quant
+        </span>
+      </motion.header>
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-[420px]"
+      >
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#F59E0B] mb-3.5">
           Licensee Access
         </p>
-        <h1 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tight">
-          {mode === "login" ? "Sign in." : "Enlist."}
+        <h1 className="font-serif-display text-[44px] leading-[1.1] text-white mb-7">
+          {mode === "login" ? (
+            <>Sign in<em className="text-[#F59E0B] italic">.</em></>
+          ) : (
+            <>Enlist<em className="text-[#F59E0B] italic">.</em></>
+          )}
         </h1>
 
-        <div className="mt-8 flex border border-white/10" data-testid="auth-mode-toggle">
-          {["login", "register"].map((m) => (
+        <div
+          className="flex border border-white/[0.08] rounded-[10px] overflow-hidden mb-6"
+          data-testid="auth-mode-toggle"
+        >
+          {[
+            ["login", "Sign In"],
+            ["register", "Create Account"],
+          ].map(([m, label]) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors duration-200 ${
-                mode === m ? "bg-white text-black" : "text-zinc-500 hover:text-white"
+              className={`flex-1 py-3 text-sm font-semibold transition-colors duration-200 ${
+                mode === m ? "bg-[#3B82F6] text-white" : "text-[#9CA3AF] hover:text-white"
               }`}
               data-testid={`auth-mode-${m}-button`}
             >
-              {m === "login" ? "Sign In" : "Create Account"}
+              {label}
             </button>
           ))}
         </div>
 
-        <div className="mt-8 space-y-4">
+        <div>
           {mode === "register" && (
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Desk / fund name"
-              className="w-full bg-black/40 border border-white/15 px-5 py-4 text-sm font-mono outline-none focus:border-[#FF3333]/60 transition-colors duration-200 placeholder:text-zinc-600"
-              data-testid="register-name-input"
-            />
+            <>
+              <label className="block text-[13px] text-[#9CA3AF] mb-1.5">Desk / fund name</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Aurelius Capital LLC"
+                className="w-full px-3.5 py-[13px] mb-4.5 rounded-[10px] border border-white/[0.08] bg-[#151B24] text-[#E5E7EB] text-[15px] outline-none focus:border-[#3B82F6] transition-colors duration-200 placeholder:text-[#6B7280] mb-[18px]"
+                data-testid="register-name-input"
+              />
+            </>
           )}
+          <label className="block text-[13px] text-[#9CA3AF] mb-1.5">Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="w-full bg-black/40 border border-white/15 px-5 py-4 text-sm font-mono outline-none focus:border-[#FF3333]/60 transition-colors duration-200 placeholder:text-zinc-600"
+            placeholder="you@example.com"
+            className="w-full px-3.5 py-[13px] rounded-[10px] border border-white/[0.08] bg-[#151B24] text-[#E5E7EB] text-[15px] outline-none focus:border-[#3B82F6] transition-colors duration-200 placeholder:text-[#6B7280] mb-[18px]"
             data-testid="auth-email-input"
           />
+          <label className="block text-[13px] text-[#9CA3AF] mb-1.5">Password</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()}
-            placeholder="Password"
-            className="w-full bg-black/40 border border-white/15 px-5 py-4 text-sm font-mono outline-none focus:border-[#FF3333]/60 transition-colors duration-200 placeholder:text-zinc-600"
+            placeholder="••••••••"
+            className="w-full px-3.5 py-[13px] rounded-[10px] border border-white/[0.08] bg-[#151B24] text-[#E5E7EB] text-[15px] outline-none focus:border-[#3B82F6] transition-colors duration-200 placeholder:text-[#6B7280] mb-[18px]"
             data-testid="auth-password-input"
           />
           {error && (
-            <p className="text-[#FF3333] text-xs uppercase tracking-wider" data-testid="auth-error-message">
+            <p className="text-[#F87171] text-[13px] mb-4" data-testid="auth-error-message">
               {error}
             </p>
           )}
           <button
             onClick={submit}
             disabled={loading}
-            className="w-full bg-white text-black font-bold uppercase tracking-wider px-8 py-4 hover:bg-zinc-200 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
+            className="w-full py-3.5 rounded-[10px] bg-[#3B82F6] text-white font-semibold text-[15px] hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-[opacity,transform] duration-150"
             data-testid="auth-submit-button"
           >
             {loading ? "…" : mode === "login" ? "Sign In" : "Create Account"}
           </button>
         </div>
 
-        <Link
-          to="/"
-          className="mt-10 inline-block text-xs uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors duration-200"
-          data-testid="login-return-home-link"
-        >
-          ← Return to Sovereign Quant
-        </Link>
+        <p className="mt-[22px] text-xs text-[#9CA3AF] text-center">
+          Software licensing only. Not investment advice.
+        </p>
       </motion.div>
+
+      <Link
+        to="/"
+        className="mt-10 text-[13px] text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors duration-200 no-underline"
+        data-testid="login-return-home-link"
+      >
+        ← Return to Sovereign Quant
+      </Link>
     </main>
   );
 }

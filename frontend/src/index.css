@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Unbounded:wght@300;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Unbounded:wght@300;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -63,6 +63,9 @@
 @layer utilities {
     .font-display {
         font-family: 'Unbounded', sans-serif;
+    }
+    .font-serif-display {
+        font-family: 'Instrument Serif', Georgia, serif;
     }
     .text-outline {
         -webkit-text-stroke: 1px rgba(245, 245, 240, 0.22);
