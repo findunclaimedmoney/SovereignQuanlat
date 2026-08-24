@@ -69,7 +69,7 @@ st.markdown("""
 # -----------------------------------------------------------------------------
 # 1. CRYPTOGRAPHIC LICENSING ENGINE (Based on v1.1 HMAC)
 # -----------------------------------------------------------------------------
-DEFAULT_SECRET = "SOVEREIGN_QUANT_DEFAULT_HMAC_SECRET_2026"
+DEFAULT_SECRET = "a7d212d2bd0873be0329ccdab002b5b3d4ae70e68c52897e1958acb6529056d2"
 
 def generate_offline_licence_key(licensee_name, tier, duration_days, secret=DEFAULT_SECRET):
     """Generates an HMAC-SHA256 signed license key (matching v1.1 specification)."""

@@ -1,0 +1,13 @@
+file '/app/backend/social_build/frames/b2_00.png'
+duration 1.215
+file '/app/backend/social_build/frames/b2_01.png'
+duration 1.215
+file '/app/backend/social_build/frames/b2_02.png'
+duration 1.215
+file '/app/backend/social_build/frames/b2_03.png'
+duration 1.215
+file '/app/backend/social_build/frames/b2_04.png'
+duration 1.215
+file '/app/backend/social_build/frames/b2_05.png'
+duration 1.215
+file '/app/backend/social_build/frames/b2_05.png'

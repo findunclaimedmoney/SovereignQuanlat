@@ -1,0 +1,6 @@
+file '/app/backend/social_build/segments/b1.mp4'
+file '/app/backend/social_build/segments/b2.mp4'
+file '/app/backend/social_build/segments/b3.mp4'
+file '/app/backend/social_build/segments/b4.mp4'
+file '/app/backend/social_build/segments/b5.mp4'
+file '/app/backend/social_build/segments/b6.mp4'
