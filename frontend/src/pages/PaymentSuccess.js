@@ -123,7 +123,7 @@ export default function PaymentSuccess() {
             <>
             <div className="mt-10 border border-white/10 bg-[#111827]">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-3 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                <span>HMAC-SHA256 // Offline Key</span>
+                <span>Ed25519 // Offline Key</span>
                 <span className="text-[#10B981]">Signature Valid</span>
               </div>
               <div className="p-5">
