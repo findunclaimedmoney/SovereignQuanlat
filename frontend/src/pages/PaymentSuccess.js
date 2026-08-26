@@ -101,6 +101,8 @@ export default function PaymentSuccess() {
                 <>Licence <span className="text-[#10B981]">issued.</span></>
               ) : order.pack_name ? (
                 <>Pack <span className="text-[#10B981]">unlocked.</span></>
+              ) : order.licence_status === "awaiting_manual_issue" ? (
+                <>Licence <span className="text-[#F59E0B]">being signed.</span></>
               ) : (
                 <>Coach <span className="text-[#10B981]">activated.</span></>
               )}
@@ -114,6 +116,13 @@ export default function PaymentSuccess() {
                 </>
               ) : order.pack_name ? (
                 "Your strategy module is ready. Download it below and drop the .py file into your workstation folder."
+              ) : order.licence_status === "awaiting_manual_issue" ? (
+                <>
+                  Payment confirmed. Every key is signed individually by the desk with
+                  an offline signing key — yours will land in your inbox{" "}
+                  <span className="text-[#E5E7EB]">within 24 hours</span>. Download the
+                  workstation now and you'll activate in seconds when it arrives.
+                </>
               ) : (
                 "ATLAS is live. Open your dashboard, scroll to the AI Coach panel, and start your first session."
               )}
@@ -123,7 +132,7 @@ export default function PaymentSuccess() {
             <>
             <div className="mt-10 border border-white/10 bg-[#111827]">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-3 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                <span>HMAC-SHA256 // Offline Key</span>
+                <span>Ed25519 // Offline Key</span>
                 <span className="text-[#10B981]">Signature Valid</span>
               </div>
               <div className="p-5">
@@ -202,7 +211,31 @@ export default function PaymentSuccess() {
               </div>
             )}
 
-            {!order.licence_key && !order.pack_name && (
+            {order.licence_status === "awaiting_manual_issue" && !order.licence_key && (
+              <div className="mt-10 border border-[#F59E0B]/30 bg-[#111827]" data-testid="licence-pending-card">
+                <div className="flex items-center justify-between border-b border-white/10 px-5 py-3 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+                  <span>Offline Signing // Desk Queue</span>
+                  <span className="text-[#F59E0B]">Within 24 hours</span>
+                </div>
+                <div className="p-5">
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Your <span className="text-[#E5E7EB]">{order.tier}</span> licence for{" "}
+                    <span className="text-[#E5E7EB]">{order.licensee}</span> is paid and
+                    queued for signing. The moment the key is issued it is emailed to you
+                    and appears in your dashboard.
+                  </p>
+                  <a
+                    href={`${API}/download/${sessionId}`}
+                    className="mt-5 inline-flex items-center gap-2 bg-[#3B82F6] text-white text-xs font-bold uppercase tracking-wider px-6 py-3 hover:bg-blue-600 active:scale-95 transition-[background-color,transform] duration-200"
+                    data-testid="download-workstation-pending-button"
+                  >
+                    Download Workstation Now
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {!order.licence_key && !order.pack_name && order.licence_status !== "awaiting_manual_issue" && (
               <div className="mt-10 border border-white/10 bg-[#111827] p-6" data-testid="coach-active-card">
                 <p className="text-sm text-zinc-300 leading-relaxed">
                   <span className="text-[#10B981]">ACTIVE.</span> Sign in with this

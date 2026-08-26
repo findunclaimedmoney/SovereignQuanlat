@@ -253,7 +253,7 @@ SCENES = [
                         [("Community", "$0", "full engine, free forever"),
                          ("Professional", "$499/yr", "full strategies + reports"),
                          ("Institutional", "$1,999/yr", "desk-scale deployment")],
-                        foot="Desk name is HMAC-signed into your licence key — checkout via Stripe."),
+                        foot="Desk name is cryptographically signed into your licence key — checkout via Stripe."),
         ],
     ),
     dict(
