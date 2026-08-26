@@ -10,7 +10,7 @@ const STEPS = [
   {
     id: "1",
     title: "Acquire Your Licence",
-    body: "Choose Professional or Institutional on the pricing section, enter your licensee name, and complete checkout. Your HMAC key is signed and shown instantly on the confirmation page — and emailed to you as backup.",
+    body: "Choose Professional or Institutional on the pricing section, enter your licensee name, and complete checkout. Your Ed25519-signed key is issued and shown instantly on the confirmation page — and emailed to you as backup.",
   },
   {
     id: "2",
@@ -32,7 +32,7 @@ const STEPS = [
   {
     id: "5",
     title: "Activate Offline",
-    body: "In the sidebar, open Licence Management → Activate New Licence Key. Paste the key from your confirmation page. Verification is local HMAC — no internet call, no phone-home. Your tier unlocks instantly.",
+    body: "In the sidebar, open Licence Management → Activate New Licence Key. Paste the key from your confirmation page. Verification is local Ed25519 public-key cryptography — no internet call, no phone-home. Your tier unlocks instantly.",
   },
   {
     id: "6",
