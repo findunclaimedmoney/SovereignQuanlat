@@ -169,7 +169,7 @@ export const Hero = () => {
         <span>
           SYS <span className="text-[#10B981]">ACTIVE</span>
         </span>
-        <span className="hidden md:inline">HMAC-SHA256 // Offline Licensing</span>
+        <span className="hidden md:inline">Ed25519 // Offline Licensing</span>
         <span className="tabular">LAT 40.7128 — LON 74.0060</span>
       </motion.div>
     </section>
