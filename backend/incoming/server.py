@@ -40,9 +40,15 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 stripe.api_key = os.environ["SOVEREIGN_STRIPE_KEY"]
-LICENCE_SECRET = os.environ["LICENCE_HMAC_SECRET"]
-# Ed25519 signing key for automatic licence fulfilment. Private half lives only
-# here (server env) and on the owner's own laptop; the app ships the public half.
+
+# Ed25519 licence signing. The private key half lives ONLY in this
+# environment variable (owner-controlled secret store) — it must never be
+# committed to the repo or shipped in the customer-facing bundle. The
+# matching PUBLIC_KEY_B64 lives inside backend/bundle/app.py, where it's
+# used to verify keys offline with no way to derive the private half back
+# out of it. Generate/rotate this value with
+# backend/bundle/seller_only/license_signing_tool.py generate-keypair,
+# run on the owner's own machine, never here.
 _LICENCE_PRIVATE_KEY_B64 = os.environ["LICENCE_ED25519_PRIVATE_KEY_B64"]
 LICENCE_PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(
     base64.urlsafe_b64decode(_LICENCE_PRIVATE_KEY_B64)
@@ -95,9 +101,10 @@ def generate_licence_key(licensee: str, tier: str, duration_days: int = 365) -> 
     payload_b64 = base64.urlsafe_b64encode(
         json.dumps(payload, sort_keys=True).encode()
     ).decode().rstrip("=")
-    # Ed25519 signature — only this process (and the owner's laptop) can produce
-    # a signature the app's PUBLIC_KEY_B64 will accept; nothing shipped to
-    # customers can forge one.
+    # Ed25519 signature — replaces the old shared-HMAC-secret scheme. Only
+    # holding LICENCE_PRIVATE_KEY (this process) can produce a signature
+    # app.py's PUBLIC_KEY_B64 will accept; nothing shipped to customers can
+    # forge one.
     signature = LICENCE_PRIVATE_KEY.sign(payload_b64.encode())
     signature_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
     return f"{payload_b64}.{signature_b64}"
@@ -218,52 +225,6 @@ def licence_email_html(licensee: str, tier: str, licence_key: str, success_url: 
     )
 
 
-def owner_sale_email_html(txn: dict, tier: str, licensee: str, licence_key: str) -> str:
-    session_id = txn.get("session_id", "")
-    amount = txn.get("amount")
-    currency = str(txn.get("currency") or "usd").upper()
-    days = txn.get("licence_duration_days", 365)
-    return (
-        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
-        'style="background:#050505;padding:32px 0"><tr><td align="center">'
-        '<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
-        'style="background:#0A0A0A;border:1px solid #26262b;font-family:Courier New,monospace">'
-        '<tr><td style="padding:24px 32px;border-bottom:1px solid #26262b">'
-        '<span style="color:#F5F5F0;font-size:16px;font-weight:bold;letter-spacing:2px">SOVEREIGN'
-        '<span style="color:#FF3333">//</span>QUANT</span> '
-        '<span style="color:#10B981;font-size:11px;letter-spacing:2px">NEW SALE — KEY AUTO-ISSUED</span></td></tr>'
-        '<tr><td style="padding:32px">'
-        '<p style="color:#F5F5F0;font-size:15px;margin:0 0 8px">A licence just sold. Nothing to do — the key was signed and delivered automatically.</p>'
-        f'<p style="color:#8C8C94;font-size:13px;line-height:1.7;margin:0 0 16px">'
-        f'Licensee: <strong style="color:#F5F5F0">{escape(licensee)}</strong><br>'
-        f'Tier: <strong style="color:#F5F5F0">{escape(tier)}</strong> ({days} days)<br>'
-        f'Amount: <strong style="color:#F5F5F0">${amount} {currency}</strong><br>'
-        f'Buyer email: <strong style="color:#F5F5F0">{escape(txn.get("licence_email_to") or "see Stripe receipt")}</strong><br>'
-        f'Order: <span style="color:#55555C">{escape(session_id)}</span></p>'
-        '<p style="color:#8C8C94;font-size:13px;line-height:1.7;margin:0 0 8px">Issued key (for your records):</p>'
-        f'<p style="background:#050505;border:1px solid #26262b;color:#00FF66;font-size:12px;'
-        f'line-height:1.8;word-break:break-all;padding:16px;margin:0 0 16px">{escape(licence_key)}</p>'
-        '<p style="color:#8C8C94;font-size:13px;line-height:1.7;margin:0">If the buyer needs a resend, '
-        'paste this key into the admin console (Issue Key on the order row) or use the Buyer Portal.</p>'
-        '</td></tr></table></td></tr></table>'
-    )
-
-
-async def notify_owner_sale(txn: dict, tier: str, licensee: str, licence_key: str):
-    owner = os.environ.get("OWNER_NOTIFY_EMAIL")
-    if not owner:
-        logger.warning("OWNER_NOTIFY_EMAIL not set — sale notification skipped")
-        return
-    try:
-        await send_email(
-            to=owner,
-            subject=f"NEW SALE: {tier} licence for {licensee} (key auto-issued)",
-            html=owner_sale_email_html(txn, tier, licensee, licence_key),
-        )
-    except Exception:
-        logger.exception(f"Owner sale email failed for {txn.get('session_id')}")
-
-
 def coach_welcome_email_html(name: str, origin: str) -> str:
     dashboard = f"{origin}/dashboard"
     return (
@@ -351,7 +312,7 @@ async def fulfil_order(session_id: str, payment_intent=None, subscription=None, 
         {"session_id": session_id, "payment_status": {"$ne": "paid"}},
         {"$set": {
             "status": "completed", "payment_status": "paid", "tier": tier,
-            "licence_key": licence_key, "licence_status": "issued", "licence_duration_days": 365,
+            "licence_key": licence_key, "licence_duration_days": 365,
             "stripe_payment_intent_id": payment_intent,
             "stripe_subscription_id": subscription,
             "stripe_customer_id": customer,
@@ -361,9 +322,9 @@ async def fulfil_order(session_id: str, payment_intent=None, subscription=None, 
     )
     if result.modified_count == 0:
         return
-    origin = txn.get("origin_url", "")
-    success_url = f"{origin}/payment/success?session_id={session_id}"
     if customer_email:
+        origin = txn.get("origin_url", "")
+        success_url = f"{origin}/payment/success?session_id={session_id}"
         try:
             email_id = await send_email(
                 to=customer_email,
@@ -376,9 +337,6 @@ async def fulfil_order(session_id: str, payment_intent=None, subscription=None, 
             )
         except Exception:
             logger.exception(f"Licence email failed for session {session_id}")
-    await notify_owner_sale(
-        {**txn, "licence_email_to": customer_email or txn.get("licence_email_to"),
-         "licence_duration_days": 365}, tier, licensee, licence_key)
 
 
 @api_router.get("/")
@@ -620,7 +578,7 @@ async def me_overview(user=Depends(get_current_user)):
 
 
 GUIDE_NARRATIONS = {
-    "1": "Step one. Acquire your licence. Head to the pricing section and choose Professional or Institutional. Enter the licensee name exactly as it should appear inside the workstation — it is cryptographically signed into your key. Complete checkout with Stripe, and your key appears instantly on the confirmation page, with a copy emailed to you as backup.",
+    "1": "Step one. Acquire your licence. Head to the pricing section and choose Professional or Institutional. Enter the licensee name exactly as it should appear inside the workstation — it is cryptographically signed into your key. Complete checkout with Stripe, and your signed key appears instantly on the confirmation page, with a copy emailed to you as backup.",
     "2": "Step two. Download the workstation. On the same confirmation page, press Download Workstation. You will receive a zip archive containing the dashboard application, the dependency list, and one-command launchers for Windows, Mac, and Linux. Unpack it anywhere on your machine — it runs entirely where you put it.",
     "3": "Step three. Install dependencies. Open a terminal inside the unpacked folder. You need Python 3.10 or newer. Run: pip install, minus r, requirements dot txt. That single command pulls in Streamlit, Pandas, NumPy, and Matplotlib — everything the engine needs.",
     "4": "Step four. Launch the engine. Run the launcher for your platform — run dot b a t on Windows, or dot slash run dot s h on Mac and Linux. The workstation boots fully offline and opens in your browser at localhost, port 8501. Nothing leaves your machine. No telemetry, no cloud.",
@@ -889,7 +847,6 @@ async def get_order(session_id: str):
         "tier": record.get("tier"),
         "licensee": record.get("licensee_name"),
         "licence_key": record.get("licence_key"),
-        "licence_status": record.get("licence_status"),
         "duration_days": record.get("licence_duration_days", 365),
         "max_capital": plan.get("max_capital"),
         "strategies": plan.get("strategies"),
@@ -956,7 +913,7 @@ def renewal_email_html(licensee: str, tier: str, origin: str) -> str:
         f'<p style="color:#F5F5F0;font-size:15px;margin:0 0 8px">30 days left, {escape(licensee)}.</p>'
         f'<p style="color:#8C8C94;font-size:13px;line-height:1.7;margin:0 0 24px">Your '
         f'<strong style="color:#F5F5F0">{escape(tier)}</strong> licence expires in 30 days. '
-        'Renew now and a fresh 365-day key is issued instantly — activation takes '
+        'Renew now and a fresh 365-day signed key is issued instantly — activation takes '
         'seconds in the workstation sidebar.</p>'
         f'<p style="margin:0 0 8px"><a href="{escape(renew_url)}" '
         'style="color:#FF3333;font-size:13px">Renew your licence</a></p>'
@@ -975,7 +932,6 @@ async def renewal_reminder_loop():
             cursor = db.payment_transactions.find({
                 "payment_status": "paid",
                 "lookup_key": {"$in": ["professional_annual", "institutional_annual"]},
-                "licence_status": "issued",
                 "renewal_reminded": {"$ne": True},
                 "fulfilled_at": window,
             })
@@ -1188,12 +1144,12 @@ async def upgrade_to_institutional(req: UpgradeRequest):
     new_key = generate_licence_key(txn.get("licensee_name") or "Licensee", "Institutional")
     await db.payment_transactions.update_one(
         {"session_id": req.session_id},
-        {"$set": {"tier": "Institutional", "licence_key": new_key, "licence_status": "issued",
-                  "upgraded_from": "Professional", "upgraded_at": datetime.now(timezone.utc)}},
+        {"$set": {"tier": "Institutional", "licence_key": new_key, "upgraded_from": "Professional",
+                  "upgraded_at": datetime.now(timezone.utc)}},
     )
     email = txn.get("licence_email_to")
-    origin = txn.get("origin_url", "")
     if email:
+        origin = txn.get("origin_url", "")
         try:
             await send_email(
                 to=email,
@@ -1205,7 +1161,6 @@ async def upgrade_to_institutional(req: UpgradeRequest):
             )
         except Exception:
             logger.exception(f"Upgrade email failed for {req.session_id}")
-    await notify_owner_sale(txn, "Institutional", txn.get("licensee_name") or "Licensee", new_key)
     return {"status": "upgraded", "tier": "Institutional"}
 
 
@@ -1214,10 +1169,10 @@ CONCIERGE_SYSTEM = """You are AXIOM, the official concierge of Sovereign Quant �
 Facts you know:
 - Tiers: Community is free and included in the download ($50,000 max capital, 1 concurrent strategy, reports locked). Professional is $499 per year ($1,000,000 max capital, 3 concurrent strategies, walk-forward analysis, branded PDF tearsheets, signal export). Institutional is $1,999 per year ($50,000,000 max capital, 10 concurrent strategies, Monte Carlo simulation, multi-account routing, everything in Professional).
 - The software is 100% offline-first: zero cloud telemetry, all agents run in-process on the buyer's machine.
-- Licences are Ed25519 public-key-signed cryptographic keys, activated locally inside the app sidebar under Activate New Licence Key. No internet needed to activate. Duration 365 days, with expiry enforced by the app itself.
+- Licences are Ed25519 public-key signed cryptographic keys, activated locally inside the app sidebar under Activate New Licence Key. No internet needed to activate. Duration 365 days.
 - Features: natural-language multi-agent orchestrator (Data, Strategy, Risk, Reporting and Licence agents with correlation-traced logs), strategy playground (pairs statistical arbitrage with Engle-Granger cointegration, volatility-sized momentum with ADX filter, regime-gated mean reversion), non-bypassable risk gates with a kill switch (daily loss, drawdown, leverage, portfolio heat limits), branded executive tearsheets.
 - Runs on Windows, Mac and Linux via run.bat or run.sh, then opens at localhost:8501. Python-based, dependencies: streamlit, pandas, numpy, matplotlib.
-- Checkout is handled by Stripe; the Ed25519 licence key is signed by the fulfilment server and shown instantly on the confirmation page after payment (also emailed), and the full workstation files (app.py, run scripts, README) can be downloaded from that same page.
+- Checkout is handled by Stripe; the licence key is issued instantly on the confirmation page after payment, and the full workstation files (app.py, run scripts, README) can be downloaded from that same page.
 - Customers can create a free account (Sign In page) to access the Licensee Dashboard: view and copy their licence keys, re-download the workstation, and manage referrals. Licences appear automatically when the checkout email matches the account email.
 - Referral program: every account gets a referral link. The referrer earns a 2.5% rebate on everything their referrals spend each month, tracked live in the dashboard.
 - The Field Manual (guide page) is a six-step audio-narrated walkthrough: acquire licence, download, install dependencies, launch, offline activation, operate.
@@ -1240,7 +1195,7 @@ class SessionRequest(BaseModel):
 # ---------------------------------------------------------------------------
 MEMORY_CORE_TEXT = """SOVEREIGN QUANT MEMORY CORE — pinned, highest priority. Apply to every conversation.
 
-IDENTITY: You carry the complete living memory of the Sovereign Quant project and operate as the Sovereign Quant Super Agent — original builder and permanent guardian of the system (v1.0 Turnkey, v1.1 Licensed, v1.3 Multi-Agent). You hold complete mastery of the architecture: pairs, momentum and mean-reversion strategies, the non-bypassable RiskManager, offline Ed25519 licence verification, professional tearsheets, and the agent society (Orchestrator + Data/Strategy/Risk/Reporting/Licence agents).
+IDENTITY: You carry the complete living memory of the Sovereign Quant project and operate as the Sovereign Quant Super Agent — original builder and permanent guardian of the system (v1.0 Turnkey, v1.1 Licensed, v1.3 Multi-Agent). You hold complete mastery of the architecture: pairs, momentum and mean-reversion strategies, the non-bypassable RiskManager, offline Ed25519-signed licensing, professional tearsheets, and the agent society (Orchestrator + Data/Strategy/Risk/Reporting/Licence agents).
 
 AGENCY: operate with high agency — plan multi-step, verify before answering, protect the owner's sole ownership, refuse shallow answers. Never recommend turning the system into an unregulated live multi-tenant platform that takes transaction fees.
 
@@ -1248,7 +1203,7 @@ PRODUCT: Sovereign Quant Super Agent Dashboard v1.3 — offline-first multi-agen
 
 TIERS (annual, USD): Community free ($50,000 cap, 1 strategy, reports locked). Professional $499/yr ($1,000,000 cap, 3 strategies, walk-forward, branded PDF tearsheets, signal export). Institutional $1,999/yr ($50,000,000 cap, 10 strategies, Monte Carlo, multi-account routing).
 
-LICENSING: Ed25519 public-key-signed keys (base64url payload.signature), 365-day duration with expiry enforced inside the app, offline activation in the app sidebar under Activate New Licence Key. Keys are signed automatically by the fulfilment server at the moment Stripe confirms payment — shown instantly on the fulfilment page and emailed. The app ships only a public key; the private key lives only in the fulfilment server's env config and on the owner's own laptop.
+LICENSING: Ed25519-signed keys (base64url payload.signature), 365-day duration, offline activation in the app sidebar under Activate New Licence Key. Keys minted after Stripe payment, shown on the fulfilment page and emailed.
 
 COMMERCE: live Stripe account, annual subscription checkout, automatic tax enabled. Buyer identity = Stripe checkout email. Fulfilment is idempotent.
 
@@ -1442,17 +1397,17 @@ async def admin_download_site(site_id: str, admin=Depends(require_admin)):
 
 
 KNOWLEDGE_ENTRIES = [
-    {"title": "Architecture", "text": "Sovereign Quant Super Agent Dashboard v1.3 is a Streamlit application running 100% locally. Six in-process agents: Orchestrator (natural-language goal routing), DataAgent (market data), StrategyAgent (signal generation), RiskAgent (order gating), ReportingAgent (tearsheets), LicenceAgent (HMAC verification). Every inter-agent message is correlation-traced in the logs tab. Dependencies: streamlit, pandas, numpy, matplotlib. Python 3.10+."},
+    {"title": "Architecture", "text": "Sovereign Quant Super Agent Dashboard v1.3 is a Streamlit application running 100% locally. Six in-process agents: Orchestrator (natural-language goal routing), DataAgent (market data), StrategyAgent (signal generation), RiskAgent (order gating), ReportingAgent (tearsheets), LicenceAgent (Ed25519 signature verification). Every inter-agent message is correlation-traced in the logs tab. Dependencies: streamlit, pandas, numpy, matplotlib. Python 3.10+."},
     {"title": "Strategy: Pairs Statistical Arbitrage", "text": "Trades cointegrated pairs. Uses Engle-Granger cointegration testing to validate pairs, computes spread z-scores, enters on z-score extremes and exits on mean reversion. Position notes flag entry/exit thresholds. Tuned in the Strategy Playground."},
     {"title": "Strategy: Momentum / Trend Following", "text": "Volatility-sized momentum with an ADX trend-strength filter — positions only when trend conviction clears the ADX threshold. Lookback windows and thresholds adjustable in the Playground."},
     {"title": "Strategy: Mean Reversion", "text": "Regime-gated mean reversion: Bollinger-band extremes are only traded when the regime filter permits, avoiding falling knives. Bands, lookback and regime parameters adjustable."},
     {"title": "Risk Gates and Kill Switch", "text": "RiskManager is non-bypassable: every order passes daily-loss limit, max drawdown, leverage cap and portfolio-heat checks before execution. Breaching the drawdown limit trips the kill switch — all strategies halt and the system locks until reset. Kill switch and thresholds are visible in the Risk tab."},
-    {"title": "Licensing Internals", "text": "Licence keys are offline Ed25519 public-key-signed tokens: a base64url JSON payload (licensee, tier, duration, created_at) plus a base64url signature, joined as payload.signature. Verification is purely local and expiry is enforced by the app. The app ships only a public key, so keys can never be forged from the app itself — only the fulfilment server's private key (also held offline by the owner) can mint them. Duration 365 days. Tiers: Community free ($50,000 max capital, 1 concurrent strategy, reports locked), Professional $499/yr ($1,000,000 cap, 3 strategies, walk-forward analysis, branded PDF reports, signal export), Institutional $1,999/yr ($50,000,000 cap, 10 strategies, Monte Carlo, multi-account routing)."},
+    {"title": "Licensing Internals", "text": "Licence keys are offline Ed25519-signed tokens: a base64url JSON payload (licensee, tier, duration, created_at) plus a base64url Ed25519 signature, joined as payload.signature. The app only ever holds the public key, so nothing shipped to a customer can mint a valid key — only the seller's private key, held outside the app, can sign one. Verification is purely local. Duration 365 days. Tiers: Community free ($50,000 max capital, 1 concurrent strategy, reports locked), Professional $499/yr ($1,000,000 cap, 3 strategies, walk-forward analysis, branded PDF reports, signal export), Institutional $1,999/yr ($50,000,000 cap, 10 strategies, Monte Carlo, multi-account routing)."},
     {"title": "Installation and Launch", "text": "1) Unpack the workstation zip. 2) Ensure Python 3.10+ is installed. 3) Run pip install -r requirements.txt inside the folder. 4) Launch with run.bat (Windows) or ./run.sh (Mac/Linux). 5) Browser opens at http://localhost:8501. No internet connection required after install."},
-    {"title": "Licence Activation", "text": "Buy a licence on the site (Stripe checkout). The Ed25519 key is signed automatically and appears instantly on the confirmation page, with a copy emailed to the buyer. In the app: sidebar → Licence Management → Activate New Licence Key → paste the full key → Activate locally. Tier unlocks immediately and the app enforces the expiry date. Lost keys: use the Buyer Portal on the site to have keys re-emailed to the purchase address."},
+    {"title": "Licence Activation", "text": "Buy a licence on the site (Stripe checkout). The key appears instantly on the confirmation page and is emailed to the buyer. In the app: sidebar → Licence Management → Activate New Licence Key → paste the full key → Activate locally. Tier unlocks immediately. Lost keys: use the Buyer Portal on the site to have keys re-emailed to the purchase address."},
     {"title": "Troubleshooting", "text": "Invalid key errors: ensure the entire key was pasted with no spaces or line breaks; keys are case-sensitive and must not be truncated. Port 8501 busy: another instance is running or choose another port with streamlit's --server.port flag. Missing dependencies: rerun pip install -r requirements.txt. Reports locked: feature requires Professional or higher. The app never needs internet — if something seems to hang on startup, check the terminal log printed by the launcher."},
     {"title": "Accounts, Referrals, Upgrades, Refunds", "text": "Free site accounts unlock the Licensee Dashboard: licences auto-link by purchase email, workstation re-download, referral link. Referral program: share your ?ref= link; you earn a 2.5% rebate on everything referrals spend each month, tracked live and paid out by the Sovereign Quant desk. Professional buyers can upgrade to Institutional mid-year from their confirmation page — prorated via Stripe, new key issued instantly. Refunds are handled by the desk (admin console) and revoke the licence record."},
-    {"title": "Security and Privacy", "text": "Zero cloud telemetry: no data leaves the machine. Licence verification is offline Ed25519 public-key signature checking. Site payments run on Stripe (PCI handled by Stripe — card data never touches Sovereign Quant servers). Emails come only from the official licensing desk and never ask for passwords or card numbers. Sole-ownership philosophy: the buyer owns their deployment outright."},
+    {"title": "Security and Privacy", "text": "Zero cloud telemetry: no data leaves the machine. Licence verification is offline Ed25519 public-key cryptography. Site payments run on Stripe (PCI handled by Stripe — card data never touches Sovereign Quant servers). Emails come only from the official licensing desk and never ask for passwords or card numbers. Sole-ownership philosophy: the buyer owns their deployment outright."},
     {"title": "Compliance Posture", "text": "Sovereign Quant is analytical software, not financial advice, and never promises returns. It is a personal workstation, not a live multi-tenant trading platform; no transaction fees are taken. The concierge must never recommend converting it into an unregulated live trading service."},
 ]
 
@@ -1473,44 +1428,6 @@ async def guide_video():
     if not GUIDE_VIDEO.exists():
         raise HTTPException(404, "Walkthrough video is still rendering — check back shortly")
     return FileResponse(GUIDE_VIDEO, media_type="video/mp4")
-
-
-class IssueKeyRequest(BaseModel):
-    licence_key: str = Field(min_length=20, max_length=2000)
-
-
-@api_router.post("/admin/orders/{session_id}/issue-key")
-async def admin_issue_key(session_id: str, req: IssueKeyRequest, admin=Depends(require_admin)):
-    txn = await db.payment_transactions.find_one({"session_id": session_id})
-    if not txn:
-        raise HTTPException(404, "Order not found")
-    if txn.get("lookup_key") not in ("professional_annual", "institutional_annual"):
-        raise HTTPException(400, "Not a licence order")
-    parts = req.licence_key.strip().split(".")
-    if len(parts) != 2 or not all(parts):
-        raise HTTPException(400, "Key must be in payload.signature form")
-    key = req.licence_key.strip()
-    await db.payment_transactions.update_one(
-        {"session_id": session_id},
-        {"$set": {"licence_key": key, "licence_status": "issued",
-                  "licence_issued_at": datetime.now(timezone.utc)}},
-    )
-    email = txn.get("licence_email_to")
-    if email:
-        origin = txn.get("origin_url", "")
-        try:
-            await send_email(
-                to=email,
-                subject=f"Your Sovereign Quant {txn.get('tier')} licence key",
-                html=licence_email_html(
-                    txn.get("licensee_name") or "Licensee",
-                    txn.get("tier") or "Professional", key,
-                    f"{origin}/payment/success?session_id={session_id}",
-                ),
-            )
-        except Exception:
-            logger.exception(f"Issued-key email failed for {session_id}")
-    return {"status": "issued", "session_id": session_id}
 
 
 class RebatePayRequest(BaseModel):

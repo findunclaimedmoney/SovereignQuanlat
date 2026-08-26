@@ -10,7 +10,7 @@ const STEPS = [
   {
     id: "1",
     title: "Acquire Your Licence",
-    body: "Choose Professional or Institutional on the pricing section, enter your licensee name, and complete checkout. The desk signs your key individually and emails it within 24 hours — the workstation download is available immediately.",
+    body: "Choose Professional or Institutional on the pricing section, enter your licensee name, and complete checkout. Your key is cryptographically signed and shown instantly on the confirmation page — and emailed to you as backup.",
   },
   {
     id: "2",
@@ -32,7 +32,7 @@ const STEPS = [
   {
     id: "5",
     title: "Activate Offline",
-    body: "In the sidebar, open Licence Management → Activate New Licence Key. Paste the key from your licence email. Verification is local public-key cryptography — no internet call, no phone-home. Your tier unlocks instantly.",
+    body: "In the sidebar, open Licence Management → Activate New Licence Key. Paste the key from your confirmation page. Verification is local public-key cryptography — no internet call, no phone-home. Your tier unlocks instantly.",
   },
   {
     id: "6",
