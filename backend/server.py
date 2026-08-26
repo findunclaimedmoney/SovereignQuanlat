@@ -240,7 +240,8 @@ def owner_sign_request_email_html(txn: dict, tier: str, licensee: str) -> str:
     amount = txn.get("amount")
     currency = str(txn.get("currency") or "usd").upper()
     days = txn.get("licence_duration_days", 365)
-    cmd = f'python license_signing_tool.py issue --name "{licensee}" --tier {tier} --days {days}'
+    today = datetime.now(timezone.utc).date().isoformat()
+    cmd = f'python license_signing_tool.py issue --name "{licensee}" --tier {tier} --days {days} --created-at {today}'
     return (
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
         'style="background:#050505;padding:32px 0"><tr><td align="center">'

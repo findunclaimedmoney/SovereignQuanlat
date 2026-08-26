@@ -6,9 +6,9 @@ import matplotlib
 import uuid
 import time
 import json
-import hashlib
-import hmac
 import base64
+import requests
+from pathlib import Path
 
 # Configure matplotlib for headless environment
 matplotlib.use('Agg')
@@ -64,61 +64,243 @@ st.markdown("""
         color: #fca5a5;
     }
 </style>
-""", unsafe_allowed_html=True)
+""", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 1. CRYPTOGRAPHIC LICENSING ENGINE (Based on v1.1 HMAC)
+# 0. DATA AGENT — REAL MARKET DATA (Binance klines, Coinbase fallback, Parquet cache)
 # -----------------------------------------------------------------------------
-DEFAULT_SECRET = "a7d212d2bd0873be0329ccdab002b5b3d4ae70e68c52897e1958acb6529056d2"
+DATA_CACHE_DIR = Path(__file__).resolve().parent / "data_cache"
+DATA_CACHE_DIR.mkdir(exist_ok=True)
 
-def generate_offline_licence_key(licensee_name, tier, duration_days, secret=DEFAULT_SECRET):
-    """Generates an HMAC-SHA256 signed license key (matching v1.1 specification)."""
-    payload = {
-        "licensee": licensee_name,
-        "tier": tier,
-        "duration": int(duration_days),
-        "created_at": "2026-08-22"
-    }
-    payload_json = json.dumps(payload, sort_keys=True)
-    payload_b64 = base64.urlsafe_b64encode(payload_json.encode()).decode().rstrip("=")
-    
-    # Sign payload
-    signature = hmac.new(
-        secret.encode(),
-        payload_b64.encode(),
-        hashlib.sha256
-    ).digest()
-    signature_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
-    
-    # Combined key
-    return f"{payload_b64}.{signature_b64}"
+# UI pair name ("BTC/USDT") -> exchange symbol ("BTCUSDT"). Extend as more pairs are added.
+PAIR_TO_SYMBOL = {
+    "BTC/USDT": "BTCUSDT",
+    "ETH/USDT": "ETHUSDT",
+}
 
-def verify_offline_licence_key(key, secret=DEFAULT_SECRET):
-    """Verifies HMAC signature of key and extracts tier details."""
+BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
+COINBASE_CANDLES_URL = "https://api.exchange.coinbase.com/products/{product_id}/candles"
+
+
+def pair_to_symbol(pair: str) -> str:
+    """Map a UI-style pair like 'BTC/USDT' to an exchange symbol like 'BTCUSDT'."""
+    return PAIR_TO_SYMBOL.get(pair, pair.replace("/", "").upper())
+
+
+def _cache_path(symbol: str, interval: str, limit: int) -> Path:
+    return DATA_CACHE_DIR / f"{symbol}_{interval}_{limit}.parquet"
+
+
+def fetch_binance_klines(symbol: str, interval: str = "12h", limit: int = 200) -> pd.DataFrame:
+    """Fetch real historical OHLCV candles from Binance's public (keyless) klines endpoint.
+
+    symbol:   exchange format, e.g. 'BTCUSDT' (no slash).
+    interval: Binance interval string, LOWERCASE, e.g. '12h' — NOT '12H'. The
+              uppercase alias is what caused the original pd.date_range crash in
+              this file; Binance (and modern pandas) both want lowercase.
+    limit:    number of candles, Binance max is 1000 per call.
+    """
+    resp = requests.get(
+        BINANCE_KLINES_URL,
+        params={"symbol": symbol, "interval": interval, "limit": limit},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    raw = resp.json()
+    df = pd.DataFrame(raw, columns=[
+        "open_time", "open", "high", "low", "close", "volume",
+        "close_time", "quote_asset_volume", "num_trades",
+        "taker_buy_base", "taker_buy_quote", "ignore",
+    ])
+    df["open_time"] = pd.to_datetime(df["open_time"], unit="ms")
+    for col in ["open", "high", "low", "close", "volume"]:
+        df[col] = df[col].astype(float)
+    return df[["open_time", "open", "high", "low", "close", "volume"]]
+
+
+def fetch_coinbase_candles(symbol: str, interval: str = "12h", limit: int = 200) -> pd.DataFrame:
+    """Fallback source if Binance is unreachable (e.g. geo-blocked). Free, no key.
+
+    Coinbase only offers fixed granularities (60/300/900/3600/21600/86400s), so
+    this is best-effort — it maps our interval to the nearest one it supports.
+    """
+    product_map = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD"}
+    product_id = product_map.get(symbol, symbol.replace("USDT", "-USD"))
+    interval_seconds = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "12h": 43200, "1d": 86400}
+    requested = interval_seconds.get(interval, 43200)
+    granularity = min([g for g in (60, 300, 900, 3600, 21600, 86400) if g >= requested] or [86400])
+
+    resp = requests.get(
+        COINBASE_CANDLES_URL.format(product_id=product_id),
+        params={"granularity": granularity},
+        timeout=10,
+        headers={"User-Agent": "sovereign-quant-dashboard"},
+    )
+    resp.raise_for_status()
+    raw = resp.json()  # rows: [time, low, high, open, close, volume], newest first
+    df = pd.DataFrame(raw, columns=["time", "low", "high", "open", "close", "volume"])
+    df["open_time"] = pd.to_datetime(df["time"], unit="s")
+    df = df.sort_values("open_time").tail(limit)
+    return df[["open_time", "open", "high", "low", "close", "volume"]].reset_index(drop=True)
+
+
+def get_real_candles(pair: str, interval: str = "12h", limit: int = 200, max_cache_age_hours: float = 4.0):
+    """Disk-cached real OHLCV fetch for a UI pair (e.g. 'BTC/USDT').
+
+    Checks the Parquet disk cache first; only hits the network when the cache is
+    missing or stale, then re-caches whatever it fetched. Returns (df, meta) —
+    meta always describes what actually happened (cache hit, live fetch, which
+    source, or failure) so callers can log something true instead of a canned
+    string. Returns (None, meta) only if there is truly no data available
+    anywhere (no cache, both live sources failed) — it never fabricates candles.
+    """
+    symbol = pair_to_symbol(pair)
+    path = _cache_path(symbol, interval, limit)
+
+    if path.exists():
+        age_hours = (time.time() - path.stat().st_mtime) / 3600.0
+        if age_hours <= max_cache_age_hours:
+            df = pd.read_parquet(path)
+            return df, {"source": "disk_cache", "pair": pair, "symbol": symbol,
+                        "candles": len(df), "age_hours": round(age_hours, 2)}
+
+    last_error = None
+    for source_name, fetch_fn in (("Binance", fetch_binance_klines), ("Coinbase", fetch_coinbase_candles)):
+        try:
+            df = fetch_fn(symbol, interval=interval, limit=limit)
+            if df is not None and len(df) > 0:
+                df.to_parquet(path, index=False)
+                return df, {"source": source_name, "pair": pair, "symbol": symbol,
+                            "candles": len(df), "age_hours": 0.0}
+        except Exception as e:
+            last_error = e
+
+    # Both live sources failed (no internet, API geo/network-blocked, etc). Fall
+    # back to a stale cache if one exists rather than silently faking data.
+    if path.exists():
+        df = pd.read_parquet(path)
+        age_hours = (time.time() - path.stat().st_mtime) / 3600.0
+        return df, {"source": "stale_disk_cache", "pair": pair, "symbol": symbol, "candles": len(df),
+                     "age_hours": round(age_hours, 2), "error": str(last_error)}
+
+    return None, {"source": "unavailable", "pair": pair, "symbol": symbol, "error": str(last_error)}
+
+
+def backtest_pairs_strategy(close_a: pd.Series, close_b: pd.Series, z_entry: float = 2.0,
+                             z_exit: float = 0.5, periods_per_year: int = 730):
+    """Real (if simple) pairs-spread backtest on real close prices.
+
+    OLS hedge ratio -> spread -> rolling z-score -> the same entry/exit state
+    machine used in the Strategy Playground tab, applied one bar after the
+    signal (no lookahead). Returns an actual equity curve plus Sharpe/Sortino/
+    Profit Factor computed from the resulting return series — not hardcoded
+    display strings.
+    """
+    x = close_a.values.astype(float)
+    y = close_b.values.astype(float)
+    hedge_ratio = np.polyfit(x, y, 1)[0]
+    spread = y - hedge_ratio * x
+
+    roll_mean = pd.Series(spread).rolling(window=20).mean().bfill()
+    roll_std = pd.Series(spread).rolling(window=20).std().bfill().replace(0, 1)
+    z = ((spread - roll_mean) / roll_std).values
+
+    position = np.zeros(len(z))
+    state = 0
+    for i, zi in enumerate(z):
+        if state == 0:
+            if zi > z_entry:
+                state = -1
+            elif zi < -z_entry:
+                state = 1
+        elif state == 1 and zi >= -z_exit:
+            state = 0
+        elif state == -1 and zi <= z_exit:
+            state = 0
+        position[i] = state
+
+    spread_ret = pd.Series(spread).diff().fillna(0).values
+    # position decided on bar i is realized on bar i+1's move (avoid lookahead)
+    strat_ret = np.roll(position, 1) * spread_ret
+    strat_ret[0] = 0.0
+    notional = np.mean(np.abs(y)) or 1.0
+    pct_ret = strat_ret / notional
+
+    equity = 100000 * np.cumprod(1 + pct_ret)
+
+    mean_ret, std_ret = np.mean(pct_ret), np.std(pct_ret)
+    sharpe = (mean_ret / std_ret) * np.sqrt(periods_per_year) if std_ret > 0 else 0.0
+
+    downside = pct_ret[pct_ret < 0]
+    downside_std = np.std(downside) if len(downside) > 0 else 0.0
+    sortino = (mean_ret / downside_std) * np.sqrt(periods_per_year) if downside_std > 0 else 0.0
+
+    gains = pct_ret[pct_ret > 0].sum()
+    losses = -pct_ret[pct_ret < 0].sum()
+    profit_factor = (gains / losses) if losses > 0 else float("inf")
+
+    return equity, sharpe, sortino, profit_factor, position
+
+
+# -----------------------------------------------------------------------------
+# 1. CRYPTOGRAPHIC LICENSING ENGINE (Ed25519 public-key signatures)
+# -----------------------------------------------------------------------------
+# Only the PUBLIC key lives here, which is safe to ship — it can verify a
+# signature but cannot produce one. License keys are minted separately, offline,
+# by whoever holds the matching private key (see seller_only/license_signing_tool.py,
+# which is NOT part of this distributed app). This replaces the previous scheme,
+# where the same secret used to check a key was also embedded here and could sign
+# new keys — meaning anyone with this file could mint their own "Institutional"
+# license for free. Public-key signing closes that: verification is safe to
+# distribute, signing is not, and the two are no longer the same secret.
+PUBLIC_KEY_B64 = "Cdg9OUuI9DgWIKmkmiAIKogaXe7qwfuojhXhtiHJhs8="
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.exceptions import InvalidSignature as _InvalidSignature
+from datetime import datetime, timedelta
+
+def verify_offline_licence_key(key):
+    """Verifies an Ed25519 signature, extracts tier details, and enforces expiry.
+
+    Keys issued under the old HMAC scheme will no longer validate — that's
+    intentional; those were forgeable by anyone with this file.
+    """
     try:
         parts = key.split(".")
         if len(parts) != 2:
             return {"valid": False, "reason": "Invalid key format"}
-        
+
         payload_b64, signature_b64 = parts[0], parts[1]
-        
-        # Recalculate signature
-        expected_sig = hmac.new(
-            secret.encode(),
-            payload_b64.encode(),
-            hashlib.sha256
-        ).digest()
-        expected_sig_b64 = base64.urlsafe_b64encode(expected_sig).decode().rstrip("=")
-        
-        # Prevent timing attacks via constant-time compare
-        if not hmac.compare_digest(signature_b64, expected_sig_b64):
+
+        pub = Ed25519PublicKey.from_public_bytes(base64.urlsafe_b64decode(PUBLIC_KEY_B64))
+        sig_padding = "=" * (-len(signature_b64) % 4)
+        signature = base64.urlsafe_b64decode(signature_b64 + sig_padding)
+
+        try:
+            pub.verify(signature, payload_b64.encode())
+        except _InvalidSignature:
             return {"valid": False, "reason": "Cryptographic signature validation failed"}
-        
-        # Decode payload
-        padding = "=" * (4 - len(payload_b64) % 4)
+
+        # Decode payload (only after the signature checks out)
+        padding = "=" * (-len(payload_b64) % 4)
         payload_json = base64.urlsafe_b64decode(payload_b64 + padding).decode()
         payload = json.loads(payload_json)
+
+        # Enforce expiry: a valid signature only proves this key was issued by
+        # us, not that it's still current. Previously nothing checked this, so
+        # a 30-day trial key would keep working forever.
+        try:
+            issued = datetime.strptime(payload["created_at"], "%Y-%m-%d")
+        except (KeyError, ValueError):
+            return {"valid": False, "reason": "Malformed license payload (bad created_at)"}
+
+        expires = issued + timedelta(days=int(payload.get("duration", 0)))
+        if datetime.now() > expires:
+            return {"valid": False, "reason": f"Licence expired on {expires.date().isoformat()}. "
+                                               f"Contact us to renew."}
+
         payload["valid"] = True
+        payload["expires_on"] = expires.date().isoformat()
         return payload
     except Exception as e:
         return {"valid": False, "reason": f"Verification error: {str(e)}"}
@@ -214,16 +396,17 @@ st.sidebar.write(f"**Licensee**: {lic_info['licensee']}")
 st.sidebar.write(f"**Tier**: `{lic_info['tier']}`")
 st.sidebar.write(f"**Max Capital**: ${tier_limits['max_capital']:,}")
 st.sidebar.write(f"**Concurrent Strategies**: Up to {tier_limits['concurrent_strategies']}")
+if lic_info.get("expires_on"):
+    st.sidebar.write(f"**Expires**: {lic_info['expires_on']}")
 
 # Expandable Key Activation
 with st.sidebar.expander("Activate New Licence Key"):
-    st.info("The system operates offline-first. Activate your HMAC key locally.")
-    user_key = st.text_area("Licence Key", help="Paste base64 HMAC signature key here.")
-    secret_override = st.text_input("Signing Secret (Optional)", type="password", help="Defaults to internal SOVEREIGN_QUANT secret.")
-    
+    st.info("The system operates offline-first. Verification happens locally against a "
+            "public key baked into this app — no phone-home required.")
+    user_key = st.text_area("Licence Key", help="Paste the key you received after purchase.")
+
     if st.button("Activate locally"):
-        secret_to_use = secret_override if secret_override else DEFAULT_SECRET
-        result = verify_offline_licence_key(user_key, secret=secret_to_use)
+        result = verify_offline_licence_key(user_key)
         if result.get("valid"):
             st.session_state.licence = result
             st.success(f"Success! Activated `{result['tier']}` License.")
@@ -231,17 +414,12 @@ with st.sidebar.expander("Activate New Licence Key"):
         else:
             st.error(f"Activation Failed: {result.get('reason', 'Invalid Key')}")
 
-with st.sidebar.expander("Demo License Key Generator"):
-    st.warning("For evaluation use only. Generates locally valid cryptographic licenses.")
-    gen_name = st.text_input("Licensee Name", "Proprietary Trader")
-    gen_tier = st.selectbox("Tier", ["Community", "Professional", "Institutional"])
-    gen_days = st.slider("Duration (Days)", 30, 365, 365)
-    gen_secret = st.text_input("Generator Secret (Optional)", type="password", placeholder="Keep default if testing standard app")
-    
-    if st.button("Generate License Key"):
-        secret_to_use = gen_secret if gen_secret else DEFAULT_SECRET
-        key = generate_offline_licence_key(gen_name, gen_tier, gen_days, secret=secret_to_use)
-        st.code(key, language=None)
+# NOTE: the self-serve "Demo License Key Generator" that used to live here has
+# been removed on purpose. This app now only holds a PUBLIC verification key —
+# signing new keys requires the private key, which is intentionally kept out
+# of this file (see seller_only/license_signing_tool.py). If you need a demo/
+# trial key for yourself, issue one with that tool the same way you would for
+# a customer.
 
 # -----------------------------------------------------------------------------
 # MAIN DASHBOARD TABS
@@ -280,12 +458,40 @@ with tab_orch:
     if run_clicked:
         st.session_state.agent_logs = []  # reset for new execution trace
         cid = str(uuid.uuid4())[:8]
-        
-        # Step-by-step agent simulation mimicking actual execution trace
+
+        # Which pairs is this goal actually about? Fall back to the two pairs the
+        # dashboard is themed around if none are named explicitly in the goal text.
+        target_pairs = [p for p in PAIR_TO_SYMBOL if p in goal_input] or ["BTC/USDT", "ETH/USDT"]
+
+        # Real DataAgent fetch (Binance klines -> Coinbase fallback -> Parquet disk
+        # cache). This is the step that used to just print a fabricated string.
+        data_meta = []
+        for pair in target_pairs:
+            _, meta = get_real_candles(pair, interval="12h", limit=200)
+            data_meta.append(meta)
+
+        ok_meta = [m for m in data_meta if m["source"] != "unavailable"]
+        if ok_meta:
+            parts = []
+            for m in ok_meta:
+                if m["source"] == "disk_cache":
+                    parts.append(f"{m['pair']}: {m['candles']} candles from Parquet cache ({m['age_hours']}h old)")
+                elif m["source"] == "stale_disk_cache":
+                    parts.append(f"{m['pair']}: {m['candles']} candles from STALE Parquet cache (live fetch failed: {m['error']})")
+                else:
+                    parts.append(f"{m['pair']}: fetched {m['candles']} fresh candles from {m['source']}, cached to Parquet")
+            data_msg = "Checked disk cache for Parquet. " + " | ".join(parts)
+        else:
+            err = data_meta[0]["error"] if data_meta else "unknown error"
+            data_msg = (f"Checked disk cache for Parquet. No cache present and live fetch failed for "
+                        f"all pairs ({err}). No candle data available.")
+
+        # Step-by-step agent trace — DataAgent's line now reflects what actually
+        # happened above instead of a canned "synthetic" string.
         steps = [
             ("Orchestrator", "GOAL", f"Received Goal: '{goal_input}'"),
             ("LicenceAgent", "LICENCE", f"Verifying active license limits. Active Tier: '{lic_info['tier']}'"),
-            ("DataAgent", "DATA", "Checked disk cache for Parquet. Loading synthetic candle series for BTC and ETH..."),
+            ("DataAgent", "DATA", data_msg),
             ("StrategyAgent", "SIGNAL", f"Analyzing historical series... Formulating Pairs Statistical Arbitrage signal spread."),
             ("RiskAgent", "RISK_CHECK", "Analyzing portfolio heat, margin bounds and cointegrated leverage parameters."),
             ("Orchestrator", "RESULT", "Execution and Signal Generation accomplished. Strategy Backtest logs updated.")
@@ -327,7 +533,7 @@ with tab_orch:
                 </div>
                 <div style="color: #e5e7eb; font-size: 0.95em;">{log['message']}</div>
             </div>
-            """, unsafe_allowed_html=True)
+            """, unsafe_allow_html=True)
     else:
         st.info("Enter an instruction above and click 'Dispatch Goal' to witness the multi-agent orchestration workflow.")
 
@@ -343,19 +549,44 @@ with tab_strat:
         ["Pairs (Statistical Arbitrage)", "Momentum / Trend Following", "Mean-Reversion"]
     )
     
-    # Generate Synthetic Data for Charts
-    np.random.seed(42)
-    dates = pd.date_range(start="2026-01-01", periods=100, freq="D")
-    
+    # Real Market Data (Binance klines, Coinbase fallback, Parquet-cached) —
+    # replaces the previous np.random synthetic generator.
+    btc_df, btc_meta = get_real_candles("BTC/USDT", interval="12h", limit=150)
+    eth_df, eth_meta = get_real_candles("ETH/USDT", interval="12h", limit=150)
+    is_synthetic = btc_df is None or eth_df is None
+
+    if is_synthetic:
+        st.markdown(
+            '<div class="risk-alert">⚠️ SYNTHETIC FALLBACK DATA — live market data unavailable '
+            f'({btc_meta.get("error") or eth_meta.get("error")}), and no Parquet cache exists yet.</div>',
+            unsafe_allow_html=True,
+        )
+        np.random.seed(42)
+        dates = pd.date_range(start="2026-01-01", periods=100, freq="D")
+        btc_close = pd.Series(np.cumsum(np.random.normal(0, 1, 100)) + 100, index=dates)
+        eth_close = pd.Series(0.8 * btc_close.values + np.random.normal(0, 1.5, 100) + 20, index=dates)
+    else:
+        n = min(len(btc_df), len(eth_df))
+        btc_df, eth_df = btc_df.tail(n).reset_index(drop=True), eth_df.tail(n).reset_index(drop=True)
+        dates = pd.DatetimeIndex(btc_df["open_time"])
+        # Rebased to 100 at the start of the window ("indexed" price) — this keeps
+        # the existing slider thresholds below (tuned for a ~100-scale series)
+        # meaningful regardless of BTC/ETH's actual dollar price level.
+        btc_close = pd.Series(100 * btc_df["close"].values / btc_df["close"].values[0], index=dates)
+        eth_close = pd.Series(100 * eth_df["close"].values / eth_df["close"].values[0], index=dates)
+        source_label = "Parquet cache" if btc_meta["source"] in ("disk_cache", "stale_disk_cache") else f"live {btc_meta['source']} fetch"
+        st.caption(f"📡 Real BTC/USDT & ETH/USDT candles ({n}, via {source_label}) — indexed to 100 at window start.")
+
     if strategy_choice == "Pairs (Statistical Arbitrage)":
         st.subheader("Statistical Arbitrage: Engle-Granger Cointegration & OLS Hedge")
         st.write("Calculates rolling hedge ratios and Z-score deviations from the cointegrated mean.")
-        
-        # Generate two cointegrated series
-        x = np.cumsum(np.random.normal(0, 1, 100)) + 100
-        spread = np.random.normal(0, 1.5, 100)
-        y = 0.8 * x + spread + 20
-        
+
+        # OLS hedge ratio + spread on the real (indexed) BTC/ETH price series
+        x = btc_close.values
+        hedge_ratio = np.polyfit(x, eth_close.values, 1)[0]
+        spread = eth_close.values - hedge_ratio * x
+        y = eth_close.values
+
         col_pair1, col_pair2, col_z = st.columns(3)
         z_entry = col_pair1.slider("Z-Score Entry Threshold", 1.0, 3.0, 2.0, step=0.1)
         z_exit = col_pair2.slider("Z-Score Exit Threshold", 0.0, 1.5, 0.5, step=0.1)
@@ -412,15 +643,18 @@ with tab_strat:
         slow_ma = col_m2.slider("Slow MA Period", 20, 200, 26)
         adx_filt = col_m3.slider("ADX Trend Strength Filter", 10, 40, 20)
         
-        # Price process
-        prices = np.cumsum(np.random.normal(0.2, 2, 100)) + 150
+        # Real BTC/USDT price series (indexed to 100 at window start, see above)
+        prices = btc_close.values
         df = pd.DataFrame({"Price": prices}, index=dates)
         df["Fast"] = df["Price"].rolling(window=fast_ma).mean()
         df["Slow"] = df["Price"].rolling(window=slow_ma).mean()
         df["Volatility"] = df["Price"].rolling(window=20).std()
-        
-        # Generate mock ADX trend filter
-        df["ADX"] = np.random.uniform(15, 35, 100)
+
+        # ADX (trend strength) filter is not yet computed from real OHLC data —
+        # a full ADX implementation is out of scope for this data-source change,
+        # so it stays a placeholder. Flagged clearly rather than silently faked.
+        st.caption("ℹ️ ADX trend-strength values below are still a placeholder — not yet computed from real high/low data.")
+        df["ADX"] = np.random.uniform(15, 35, len(df))
         
         fig, ax = plt.subplots(figsize=(10, 4.5))
         ax.plot(df.index, df["Price"], label="Close Price", color="#ffffff")
@@ -439,8 +673,8 @@ with tab_strat:
         st.subheader("Mean Reversion in Volatility Contained Regimes")
         st.write("Identifies high z-score deviations specifically in low-volatility, range-bound market environments.")
         
-        # Price and volatility regime
-        price = 100 + np.sin(np.linspace(0, 6*np.pi, 100)) * 10 + np.random.normal(0, 1, 100)
+        # Real BTC/USDT price series (indexed to 100 at window start, see above)
+        price = btc_close.values
         vol = pd.Series(price).rolling(window=10).std().fillna(1)
         regime = np.where(vol < 3.5, "Low-Vol", "High-Vol")
         
@@ -519,7 +753,7 @@ with tab_risk:
         if r_limit["kill_switch_triggered"]:
             st.markdown(
                 '<div class="risk-alert">❌ ORDER BLOCKED: The system is currently in a KILL-SWITCH locked state. Reset circuit breaker in sidebar first.</div>', 
-                unsafe_allowed_html=True
+                unsafe_allow_html=True
             )
         elif (order_size / tier_limits["max_capital"] * 100) > r_limit["portfolio_heat_limit_pct"]:
             st.error(f"❌ ORDER BLOCKED: Order portfolio heat exceeds portfolio heat limit of {r_limit['portfolio_heat_limit_pct']}%.")
@@ -546,11 +780,33 @@ with tab_rep:
         st.success(f"🎉 Fully unlocked reporting modules under `{lic_info['tier']}` License.")
         
     st.subheader("Portfolio Performance Backtest Summary")
-    
-    # Generate mock cumulative equity curves
-    t_index = pd.date_range(start="2026-01-01", periods=200, freq="12H")
-    base_equity = 100000 * np.cumprod(1 + np.random.normal(0.001, 0.012, 200))
-    
+
+    # Real BTC/USDT & ETH/USDT candles, Parquet-cached — feeds an actual pairs
+    # backtest below instead of a fabricated random-walk equity curve.
+    btc_df, btc_meta = get_real_candles("BTC/USDT", interval="12h", limit=200)
+    eth_df, eth_meta = get_real_candles("ETH/USDT", interval="12h", limit=200)
+
+    sharpe_val = sortino_val = pf_val = None
+    if btc_df is None or eth_df is None:
+        st.markdown(
+            '<div class="risk-alert">⚠️ Live market data unavailable '
+            f'({btc_meta.get("error") or eth_meta.get("error")}) and no Parquet cache exists yet — '
+            'showing a clearly-labelled SYNTHETIC fallback tearsheet, not a real backtest.</div>',
+            unsafe_allow_html=True,
+        )
+        np.random.seed(7)
+        t_index = pd.date_range(start="2026-01-01", periods=200, freq="12h")  # lowercase 'h' — fixes the original freq bug
+        base_equity = 100000 * np.cumprod(1 + np.random.normal(0.001, 0.012, 200))
+    else:
+        n = min(len(btc_df), len(eth_df))
+        btc_close = pd.Series(btc_df["close"].values[-n:], index=pd.DatetimeIndex(btc_df["open_time"].values[-n:]))
+        eth_close = pd.Series(eth_df["close"].values[-n:], index=btc_close.index)
+        t_index = btc_close.index
+        base_equity, sharpe_val, sortino_val, pf_val, _ = backtest_pairs_strategy(btc_close, eth_close)
+        source_label = "Parquet cache" if btc_meta["source"] in ("disk_cache", "stale_disk_cache") else f"live {btc_meta['source']} fetch"
+        st.caption(f"📡 Backtested on {n} real BTC/USDT & ETH/USDT 12h candles (via {source_label}). "
+                   "Simple Z-score pairs strategy (entry 2.0 / exit 0.5) — same logic as the Strategy Playground tab.")
+
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.plot(t_index, base_equity, color="#60a5fa", label="Sovereign Core Strategy", linewidth=2)
     ax.set_title("Sovereign Quant Cumulative Backtest Returns")
@@ -563,9 +819,14 @@ with tab_rep:
     plt.close(fig)
     
     col_t1, col_t2, col_t3 = st.columns(3)
-    col_t1.metric("Sharpe Ratio", "2.84", "+0.15")
-    col_t2.metric("Sortino Ratio", "3.12", "+0.09")
-    col_t3.metric("Profit Factor", "1.92", "-0.04")
+    if sharpe_val is not None:
+        col_t1.metric("Sharpe Ratio", f"{sharpe_val:.2f}")
+        col_t2.metric("Sortino Ratio", f"{sortino_val:.2f}")
+        col_t3.metric("Profit Factor", f"{pf_val:.2f}" if np.isfinite(pf_val) else "∞")
+    else:
+        col_t1.metric("Sharpe Ratio", "N/A")
+        col_t2.metric("Sortino Ratio", "N/A")
+        col_t3.metric("Profit Factor", "N/A")
     
     st.markdown("---")
     st.subheader("🛠️ Report Generator Export Panel")

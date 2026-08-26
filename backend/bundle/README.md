@@ -26,7 +26,7 @@ Then open your browser to: **http://localhost:8501**
 - Multi-Agent Orchestrator (natural language goals)
 - Strategy Playground (Pairs, Momentum, Mean-Reversion)
 - Non-bypassable Risk Gates + Kill Switch
-- Offline HMAC Licence activation
+- Offline Ed25519 licence activation (public-key signed, expiry enforced)
 - Branded Reports (tier-gated)
 
 ## Licence tiers
@@ -37,4 +37,4 @@ Then open your browser to: **http://localhost:8501**
 | Professional | $1,000,000 | 3 | Unlocked |
 | Institutional | $50,000,000 | 10 | Unlocked |
 
-Generate a demo key in the sidebar under **Demo License Key Generator**.
+Activate your purchased key in the sidebar under **Activate New Licence Key**. Keys are Ed25519-signed by the Sovereign Quant desk and emailed after purchase; verification is fully offline and the key expiry date is enforced by the app. There is no demo key generator — evaluation uses the free Community tier.
