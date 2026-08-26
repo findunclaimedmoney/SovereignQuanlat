@@ -2,7 +2,7 @@ import Marquee from "react-fast-marquee";
 
 const ITEMS = [
   "Zero Cloud Telemetry",
-  "HMAC-SHA256 Offline Licensing",
+  "Ed25519 Offline Licensing",
   "Non-Bypassable Risk Gates",
   "Multi-Agent Orchestration",
   "Kill-Switch Circuit Breaker",
