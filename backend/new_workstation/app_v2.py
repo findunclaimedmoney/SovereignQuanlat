@@ -253,7 +253,7 @@ def backtest_pairs_strategy(close_a: pd.Series, close_b: pd.Series, z_entry: flo
 # new keys — meaning anyone with this file could mint their own "Institutional"
 # license for free. Public-key signing closes that: verification is safe to
 # distribute, signing is not, and the two are no longer the same secret.
-PUBLIC_KEY_B64 = "Cdg9OUuI9DgWIKmkmiAIKogaXe7qwfuojhXhtiHJhs8="
+PUBLIC_KEY_B64 = "MdHqH5TbXv0TzEh2jGjxlFhSXdl7EShSfScBu8h7Obo="
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.exceptions import InvalidSignature as _InvalidSignature

@@ -59,7 +59,7 @@ def wrap(d, text, font, width):
 def hook_frame():
     img, d = base()
     d.text((60, 420), "THIS IS A REAL BACKTEST.", font=f(SERIF, 74), fill=TEXT)
-    d.text((60, 520), "Running right now.", font=f(SERIF, 74), fill=GOLD)
+    d.text((60, 520), "Replaying exactly as it ran.", font=f(SERIF, 54), fill=GOLD)
     for i, ln in enumerate(wrap(d, "No actors. No stock photos. Free tier, one command, your machine.",
                                  f(MONO, 34), W - 160)):
         d.text((60, 660 + i * 50), ln, font=f(MONO, 34), fill=DIM)
@@ -169,12 +169,12 @@ render_chart(CHART, (960, 540))
 
 BEATS = [
     dict(id="b1", min_len=4.0, frames=[hook_frame()],
-         narration="This is a real backtest. Running right now."),
+         narration="This is a real backtest, replaying exactly as it ran."),
     dict(id="b2", min_len=6.0,
          frames=[terminal_frame(k) for k in (1, 3, 5, 7, 9, 10)],
          narration="Sovereign Quant loads real market data, runs three strategies, and every order has to clear the risk manager."),
     dict(id="b3", min_len=6.0, frames=[curve_frame()],
-         narration="Here is the curve it produced. Six hundred and fifty-two trades. One command."),
+         narration="Here is the equity curve, rebuilt from the actual run log. Six hundred and fifty-two trades. One command."),
     dict(id="b4", min_len=5.5, frames=[stats_frame()],
          narration="Plus five point five eight percent. Sharpe zero point two eight eight. Max drawdown, minus seven percent."),
     dict(id="b5", min_len=5.0, frames=[positioning_frame()],

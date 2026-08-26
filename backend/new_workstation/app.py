@@ -253,14 +253,13 @@ def backtest_pairs_strategy(close_a: pd.Series, close_b: pd.Series, z_entry: flo
 # new keys — meaning anyone with this file could mint their own "Institutional"
 # license for free. Public-key signing closes that: verification is safe to
 # distribute, signing is not, and the two are no longer the same secret.
-PUBLIC_KEY_B64 = "Cdg9OUuI9DgWIKmkmiAIKogaXe7qwfuojhXhtiHJhs8="
+PUBLIC_KEY_B64 = "MdHqH5TbXv0TzEh2jGjxlFhSXdl7EShSfScBu8h7Obo="
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.exceptions import InvalidSignature as _InvalidSignature
-from datetime import datetime, timedelta
 
 def verify_offline_licence_key(key):
-    """Verifies an Ed25519 signature, extracts tier details, and enforces expiry.
+    """Verifies an Ed25519 signature and extracts tier details.
 
     Keys issued under the old HMAC scheme will no longer validate — that's
     intentional; those were forgeable by anyone with this file.
@@ -285,22 +284,7 @@ def verify_offline_licence_key(key):
         padding = "=" * (-len(payload_b64) % 4)
         payload_json = base64.urlsafe_b64decode(payload_b64 + padding).decode()
         payload = json.loads(payload_json)
-
-        # Enforce expiry: a valid signature only proves this key was issued by
-        # us, not that it's still current. Previously nothing checked this, so
-        # a 30-day trial key would keep working forever.
-        try:
-            issued = datetime.strptime(payload["created_at"], "%Y-%m-%d")
-        except (KeyError, ValueError):
-            return {"valid": False, "reason": "Malformed license payload (bad created_at)"}
-
-        expires = issued + timedelta(days=int(payload.get("duration", 0)))
-        if datetime.now() > expires:
-            return {"valid": False, "reason": f"Licence expired on {expires.date().isoformat()}. "
-                                               f"Contact us to renew."}
-
         payload["valid"] = True
-        payload["expires_on"] = expires.date().isoformat()
         return payload
     except Exception as e:
         return {"valid": False, "reason": f"Verification error: {str(e)}"}
@@ -396,8 +380,6 @@ st.sidebar.write(f"**Licensee**: {lic_info['licensee']}")
 st.sidebar.write(f"**Tier**: `{lic_info['tier']}`")
 st.sidebar.write(f"**Max Capital**: ${tier_limits['max_capital']:,}")
 st.sidebar.write(f"**Concurrent Strategies**: Up to {tier_limits['concurrent_strategies']}")
-if lic_info.get("expires_on"):
-    st.sidebar.write(f"**Expires**: {lic_info['expires_on']}")
 
 # Expandable Key Activation
 with st.sidebar.expander("Activate New Licence Key"):

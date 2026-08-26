@@ -14,8 +14,26 @@ export default function Admin() {
   const [siteName, setSiteName] = useState("");
   const [siteInstructions, setSiteInstructions] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [issueKeys, setIssueKeys] = useState({});
+  const [issuing, setIssuing] = useState(null);
 
   const headers = { "X-Admin-Key": key };
+
+  const issueKey = async (sessionId) => {
+    const licenceKey = (issueKeys[sessionId] || "").trim();
+    if (!licenceKey) return toast.error("PASTE THE SIGNED KEY FIRST");
+    try {
+      setIssuing(sessionId);
+      await axios.post(`${API}/admin/orders/${sessionId}/issue-key`,
+        { licence_key: licenceKey }, { headers });
+      toast.success("KEY ISSUED — EMAILED TO BUYER");
+      setIssueKeys((s) => ({ ...s, [sessionId]: "" }));
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "ISSUE FAILED");
+    }
+    setIssuing(null);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -181,10 +199,29 @@ export default function Admin() {
                   {o.licence_revoked && " / revoked"}
                 </span>
                 <div className="col-span-3 text-right">
+                  {o.licence_status === "awaiting_manual_issue" && (
+                    <div className="flex items-center justify-end gap-2">
+                      <input
+                        value={issueKeys[o.session_id] || ""}
+                        onChange={(e) => setIssueKeys((s) => ({ ...s, [o.session_id]: e.target.value }))}
+                        placeholder="paste signed key"
+                        className="w-40 bg-[#0B0F14] border border-[#F59E0B]/40 px-2 py-2 text-[10px] text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-[#F59E0B]"
+                        data-testid={`issue-key-input-${i}`}
+                      />
+                      <button
+                        onClick={() => issueKey(o.session_id)}
+                        disabled={issuing === o.session_id}
+                        className="bg-[#F59E0B] text-black text-[10px] font-bold uppercase tracking-wider px-4 py-2 hover:bg-amber-400 active:scale-95 disabled:opacity-50 transition-[background-color,transform,opacity] duration-200"
+                        data-testid={`issue-key-button-${i}`}
+                      >
+                        {issuing === o.session_id ? "…" : "Issue Key"}
+                      </button>
+                    </div>
+                  )}
                   {o.payment_status === "paid" && (
                     <button
                       onClick={() => refund(o.session_id)}
-                      className="bg-[#3B82F6] text-white text-[10px] font-bold uppercase tracking-wider px-4 py-2 hover:bg-blue-600 active:scale-95 transition-[background-color,transform] duration-200"
+                      className="mt-2 bg-[#3B82F6] text-white text-[10px] font-bold uppercase tracking-wider px-4 py-2 hover:bg-blue-600 active:scale-95 transition-[background-color,transform] duration-200"
                       data-testid={`refund-button-${i}`}
                     >
                       Refund + Revoke

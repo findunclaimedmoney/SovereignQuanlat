@@ -225,7 +225,7 @@ T_KILLSWITCH = [
 SCENES = [
     dict(
         id="s1", min_len=10,
-        narration="This is Sovereign Quant. No actors, no green screen. This is a real backtest, running right now, on the free tier anyone can download.",
+        narration="This is Sovereign Quant. No actors, no green screen. This is a real backtest, replayed exactly as it ran, on the free tier anyone can download.",
         frames=[terminal_frame(T_BACKTEST, k, "root@sovereign: ~/sovereign_quant — live run") for k in (1, 2, 4, 6)],
     ),
     dict(
@@ -253,7 +253,7 @@ SCENES = [
                         [("Community", "$0", "full engine, free forever"),
                          ("Professional", "$499/yr", "full strategies + reports"),
                          ("Institutional", "$1,999/yr", "desk-scale deployment")],
-                        foot="Desk name is HMAC-signed into your licence key — checkout via Stripe."),
+                        foot="Desk name is cryptographically signed into your licence key — checkout via Stripe."),
         ],
     ),
     dict(
