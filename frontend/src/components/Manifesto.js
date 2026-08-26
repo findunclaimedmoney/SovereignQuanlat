@@ -27,7 +27,7 @@ const CHAPTERS = [
     number: "03",
     title: "Fortify",
     body: "RiskManager is a non-bypassable runtime gate. Every order clears daily-loss, drawdown, leverage and portfolio-heat checks — or it does not exist. Breach the drawdown limit and the kill switch locks the machine.",
-    bullets: ["Non-bypassable order gates", "Kill-switch circuit breaker", "Offline HMAC licence activation"],
+    bullets: ["Non-bypassable order gates", "Kill-switch circuit breaker", "Offline Ed25519 licence activation"],
     image:
       "https://images.pexels.com/photos/37730212/pexels-photo-37730212.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
     alt: "Close-up of server racks",
