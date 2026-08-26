@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: "Where does my data go?",
-    a: "Nowhere. The workstation runs fully offline with zero telemetry. Licence activation is local cryptography (HMAC) — our servers never see your machine, your strategies, or your results.",
+    a: "Nowhere. The workstation runs fully offline with zero telemetry. Licence activation is local cryptography (Ed25519 signature verification) — our servers never see your machine, your strategies, or your results.",
   },
 ];
 
