@@ -104,7 +104,7 @@ export const Pricing = () => {
           Choose your <span className="text-outline-red">clearance.</span>
         </h2>
         <p className="mt-6 max-w-xl text-base md:text-lg text-zinc-400">
-          Annual offline licences. Keys are HMAC-signed, delivered instantly, and
+          Annual offline licences. Keys are Ed25519-signed, delivered instantly, and
           activated locally — the licensing server never sees your machine again.
         </p>
       </motion.div>
@@ -252,7 +252,7 @@ export const Pricing = () => {
               {selected?.name} Licence
             </DialogTitle>
             <DialogDescription className="text-zinc-500 text-sm">
-              The licensee name is cryptographically signed into your HMAC key.
+              The licensee name is cryptographically signed into your Ed25519 key.
               It appears inside the workstation on activation.
             </DialogDescription>
           </DialogHeader>
