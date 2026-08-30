@@ -1,0 +1,21 @@
+# Sovereign Quant — https://sovereignquant.com.au
+User-agent: *
+Allow: /
+Allow: /guide
+Allow: /login
+
+Disallow: /api/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /refund
+Disallow: /portal
+Disallow: /portal/
+Disallow: /dashboard
+Disallow: /payment/
+Disallow: /download/
+Disallow: /static/js/
+Disallow: /static/css/
+Disallow: /visual-edit-overlay.js
+
+Sitemap: https://sovereignquant.com.au/sitemap.xml
+Sitemap: https://www.sovereignquant.com.au/sitemap.xml
