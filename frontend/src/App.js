@@ -12,6 +12,7 @@ import Admin from "@/pages/Admin";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Guide from "@/pages/Guide";
+import Book from "@/pages/Book";
 
 function App() {
   useEffect(() => {
@@ -44,6 +45,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/guide" element={<Guide />} />
+            <Route path="/book" element={<Book />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
