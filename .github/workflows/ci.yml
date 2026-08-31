@@ -13,12 +13,16 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+     - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-      - run: npm install
-      - run: npm run build
+          node-version: "20"
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - name: Install dependencies & build
+        working-directory: ./frontend
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
         env:
           CI: true
           REACT_APP_BACKEND_URL: https://sovereignquant.com.au
