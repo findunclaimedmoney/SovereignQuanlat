@@ -35,6 +35,7 @@ export const Nav = () => {
             ["Manifesto", "#manifesto", "nav-manifesto-link"],
             ["Pricing", "#pricing", "nav-pricing-link"],
             ["Guide", "/guide", "nav-guide-link"],
+            ["Book", "/book", "nav-book-link"],
           ].map(([label, href, id], i) => (
             href.startsWith("/") ? (
               <a
